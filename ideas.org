@@ -1,0 +1,15 @@
+* recursion
+* state machine
+** produce a change to subject and produce new core
+* tapes vs cords
+* centis %=
+* kethep ^-
+* wet vs dry gates
+** wet gates are like generics
+* molds
+* tree addressing
+** naming resolved at compile time
+** why tree addressing over faces?
+*** no real reason, sometimes clearer
+**** Need an example
+* Type inference?
