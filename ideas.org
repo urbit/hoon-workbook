@@ -1,6 +1,8 @@
 * recursion
 * state machine
 ** produce a change to subject and produce new core
+*** Traffic Light
+*** vending machine
 * tapes vs cords
 * centis %=
 * kethep ^-
