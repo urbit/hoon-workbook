@@ -32,7 +32,7 @@ Produce a core and put it onto the subject. This core in particular is used to
 store types. This is a common idiom in hoon programs that need to introduce new
 types that allows the compiler to do constant folding, which is to say it
 improves performance. In this case, the type being created is `state` which can
-be ond of three values `%red`, `%yellow` or `%green` corresponding to the three
+be one of three values `%red`, `%yellow` or `%green` corresponding to the three
 light colors of a standard traffic light.
 
 ```
@@ -40,18 +40,16 @@ light colors of a standard traffic light.
 ```
 
 The line here is to create a noun of type `state` and give it a default value.
-Because we are putting this into subject it will be available for use in our core
-and any copies that are created will have their own versions of this and anything
-else in the subject.
-
+Because we are putting this into subject it will be available for use in the
+`traffic-light` core we are about to create.
 
 ```
 =+  ^=  traffic-light
 ```
 
-The use of =+ here over =/ is because type is difficult to refer to and unnecessary
-in this case. It is easier to allow the compiler to infer the type since we will
-not need to explicitly refer to it again.
+The use of =+ here over =/ is because core types are most often annonymous. It
+is easier to allow the compiler to infer the type since we will not need to
+explicitly refer to it.
 
 The core we are about to produce is also more useful to us if we give it a name
 which is the function of ^=
@@ -76,7 +74,7 @@ The gate we are producing with |= may look a bit strange but let's break it down
       +>.$(current-state s)
 ```
 
-We first produce with one arm named `$`. That `$` arm will produce a new core with
+We first produce a core with one arm named `$`. That `$` arm will produce a new core with
 `current-state` changed to match the `s` provided when it was called. How does this 
 work?
 
@@ -91,19 +89,18 @@ used this way so it would be a good idea to remember it.
 =+  b=traffic-light
 ```
 
-Now we have the last parts of our program. Remember that `=+` allows us to create a noun
-with a face and a type. In this case we are creating two nouns, one with the face `a`
-and a second with the face `b`. These two nouns both have the type of `traffic-light`
-which esentially makes them two new `traffic-lights` with all the bits we previously
-created.
+Now we have the last parts of our program. Remember that `=+` allows us to add a noun
+to the head of the subject. In this case we are adding two nouns, one with the face `a`
+and a second with the face `b`. These two nouns will be copies of the `traffic-light` 
+core with all the bits we previously created.
 
 ```
 =.  a  (set.a %yellow)
 ```
 
-Here we pull the `set` arm on `a` and give it the argument of `%yellow`. Remember that
-we are actually producing a new core in set, so we have to then assign that back to the
-face `a`
+Here we use the `set` arm on `a` to produce a gate and give that the argument of `%yellow`.
+Remember that we are actually producing a new core in the gate, so we have to then assign that
+back to the face `a`.
 
 ```
 [current-state.a current-state.b]
