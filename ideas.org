@@ -19,3 +19,20 @@
 *** no real reason, sometimes clearer
 **** Need an example
 * Type inference?
+
+
+
+
+
+
+* new ideas
+** RPS
+*** extension to add other moves
+** take a number and return a list of it's digits
+** check if a string is a palendrome
+** rpn calc
+** magic 8 ball
+** sieve of eratosthenes
+** Shuffle a deck of cards
+** Fetch latest N entries from an rss feed
+** Generate starting positions for Chess960
