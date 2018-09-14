@@ -33,6 +33,13 @@
 ** rpn calc
 ** magic 8 ball
 ** sieve of eratosthenes
+*** apparently already in chapter 2
 ** Shuffle a deck of cards
+*** also already in chapter 2
 ** Fetch latest N entries from an rss feed
 ** Generate starting positions for Chess960
+** given a dollar amount and a list of coins and bills, calculate the change required
+** given a data structure representing items on a hero, calculate the range of 
+   damage they are likely to inflict on a monster.
+** Given a data structure representing the board state in a game of tetris,
+   produce a new board state without any completed lines
