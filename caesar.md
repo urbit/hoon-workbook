@@ -61,22 +61,15 @@ See if you can decipher this arm before continuing on.
 
 Ready?
 
-We're going to create a gate that takes two arguments, `m` as a `tape`
-and `n` as an `@ud`.
+We're going to create a gate that takes two arguments, `m` as a `tape` and `n` as an `@ud`.
 
-Next we store the length of `m` for making the following code a little
-clearer. 
+Next we store the length of `m` for making the following code a little clearer. 
 
-What we are doing in creating `s` is splitting it into two parts, `p` and 
-`q`. The reason for calling `mod` is to make sure we split our `tape` at
-the correct place, even if `n` is larger than `length`.
+What we are doing in creating `s` is splitting it into two parts, `p` and `q`. The reason for calling `mod` is to make sure we split our `tape` at the correct place, even if `n` is larger than `length`.
 
-The final part is to use `weld`, which combines two strings, to flip the
-two parts of `s` around where `q.s` was the tail, and `p.s` was the head.
+The final part is to use `weld`, which combines two strings, to flip the two parts of `s` around where `q.s` was the tail, and `p.s` was the head.
 
-So... what is this gate actually acomplishing? We are taking the first `n`
-characters off of `m` and putting them on the end of the `tape`. Why we
-are doing this will become clear in a bit.
+So... what is this gate actually acomplishing? We are taking the first `n` characters off of `m` and putting them on the end of the `tape`. Why we are doing this will become clear in a bit.
 
 ```
     ++  zipper
@@ -91,20 +84,11 @@ are doing this will become clear in a bit.
       $(chart (~(put by chart) i.a i.b), a t.a, b t.b)
 ```
 
-Next up we have the `zipper` arm. Again, try to see if you can understand
-this code before reading the explaination. Reading code is a difficult
-skill that takes effort to master, just as you had to master reading
-English.
+Next up we have the `zipper` arm. Again, try to see if you can understand this code before reading the explaination. Reading code is a difficult skill that takes effort to master, just as you had to master reading English.
 
 Ready?
 
-Okay so we have a gate that takes two tapes `a` and `b` and we can see by 
-the use of `^-` that we are going to end up producing a `map` with `cord` 
-keys and `cord` values. What is a `map`? This is a type equivalent to a 
-dictionary in other languages, it's an associative data structure that
-`map`s a key to a value. If, for example, we wanted to have an association
-betwen `a` and 1 and `b` and 2 we could use a map. It might help to visual
-it this way.
+Okay so we have a gate that takes two tapes `a` and `b` and we can see by the use of `^-` that we are going to end up producing a `map` with `cord` keys and `cord` values. What is a `map`? This is a type equivalent to a dictionary in other languages, it's an associative data structure that `map`s a key to a value. If, for example, we wanted to have an association between `a` and 1 and `b` and 2 we could use a map. It might help to visual it this way.
 
 ```
 map
@@ -114,32 +98,20 @@ map
 
 ```
 
-In the case of a `map`, we are free to use whatever types are appropriate
-to our situation for both keys and values.
+In the case of a `map`, we are free to use whatever types are appropriate to our situation for both keys and values.
 
-What is a `cord` and why are we producing a map of them? A `cord` is a
-string of UTF-8 characters packed in Least Significant Byte Order (LSB).
-So far we have not really defined what exactly a `tape` is.  It's time to
-do that. A `tape` is actually just a `list` of `cord` that are generally
-only a single character each. This makes them easier to manipulate that
-simply working with raw `cords`.
+What is a `cord` and why are we producing a map of them? A `cord` is a string of UTF-8 characters packed in Least Significant Byte Order (LSB).So far we have not really defined what exactly a `tape` is.  It's time to do that. A `tape` is actually just a `list` of `cord` that are generally only a single character each. This makes them easier to manipulate that simply working with raw `cords`.
 
-So then if `tapes` are easier to manipulate, why then are we producing 
-`cords`? In this case what we are going to to be doing is maping a single 
-element of a `tape` to another element of a `tape`, which as we have
-established as being a `cord`. This will simplify our use of this method
-and we don't need to manipulate the keys or values, simply look them up.
+So then if `tapes` are easier to manipulate, why then are we producing `cords`? In this case what we are going to to be doing is maping a single element of a `tape` to another element of a `tape`, which as we have established as being a `cord`. This will simplify our use of this method and we don't need to manipulate the keys or values, simply look them up.
 
 ```
       ?.  =((lent a) (lent b))
         ~|  %uneven-lengths  !!
 ```
 
-It's worth pointing out that if we feed this two tapes of different lengths,
-our method will simply blow up with the use of `!!`.
+It's worth pointing out that if we feed this two tapes of different lengths, our method will simply blow up with the use of `!!`.
 
-Since we have already discussed what our gate here is supposed to do, let's
-dig into the how.
+Since we have already discussed what our gate here is supposed to do, let's dig into the how.
 
 ```
       |-
@@ -148,32 +120,20 @@ dig into the how.
       $(chart (~(put by chart) i.a i.b), a t.a, b t.b)
 ```
 
-Recall that `|-` is used to form a gate and `kick` or call it immediately.
-Conceptually, you could think of `|-` as a "recursion point."
+Recall that `|-` is used to form a gate and `kick` or call it immediately. Conceptually, you could think of `|-` as a "recursion point."
 
-We then are going to figure out if either list is empty. Given that we know
-that both lists are of the same length at this point, why do we check both
-lists to see if they are empty or not? Wouldn't it be just as effective
-to only check one given that we want to pair each element together? 
+We then are going to figure out if either list is empty. Given that we know that both lists are of the same length at this point, why do we check both lists to see if they are empty or not? Wouldn't it be just as effective to only check one given that we want to pair each element together? 
 
 Digression about types
 ----------------------
 
-At this point we have seen that we have to explicitly check if a `tape` is
-empty before we can use the faces in it. Why? Remember that a `tape` is
-actually a `list` Conceptually, we have just assumed we knew what a `list`
-is but it's time to stop assuming. A `list` is actually a `fork` of `lest`
-and `~`.
+At this point we have seen that we have to explicitly check if a `tape` is empty before we can use the faces in it. Why? Remember that a `tape` is actually a `list` Conceptually, we have just assumed we knew what a `list` is but it's time to stop assuming. A `list` is actually a `fork` of `lest` and `~`.
 
-But what does that mean?  A `lest` is what you are probably thinking of
-when you think of `list`. It's a cell of at least two items, the head is 
-the first thing in the list and the tail is the rest of the list. 
+But what does that mean?  A `lest` is what you are probably thinking of when you think of `list`. It's a cell of at least two items, the head is the first thing in the list and the tail is the rest of the list. 
 
 `~` is the constant which stands for a value with no information.
 
-A `fork` may be familiar in terms of set theory. A type can be thought
-of as a set of possible values. For example, the set of values for `@ud` 
-would be the set of all natural numbers. A `fork` is a union of types.
+A `fork` may be familiar in terms of set theory. A type can be thought of as a set of possible values. For example, the set of values for `@ud` would be the set of all natural numbers. A `fork` is a union of types.
 
 (diagram here to explain unions)
 
@@ -188,35 +148,21 @@ You can not find names through a `fork`.
 ----------------------
 
 
-If either `tape` is empty, we are finished and can return `chart` which is
-the `map` we have been creating.
+If either `tape` is empty, we are finished and can return `chart` which is the `map` we have been creating.
 
-If there are still things left in the `tapes` then we need to add them to
-our `map`. We of course are going to have to repeat this process
-until they are empty so we will start by changing the value of `chart`.
+If there are still things left in the `tapes` then we need to add them to our `map`. We of course are going to have to repeat this process until they are empty so we will start by changing the value of `chart`.
 
 ```
 (~(put by chart) i.a i.b)
 ```
 
-This part of that in particular is worth breaking down further. We are using
-the wide form of the `%~` rune. This rune is the general case for function
-calls. What we need to do is take a core, provide a sample, and pull an
-arm out of that core. `by` is the core and `put` is the arm out of that core
-that we want to pull. `by` is the `map` engine core that contains all the 
-arms we are going to need to manipulate the map.
+This part of that in particular is worth breaking down further. We are using the wide form of the `%~` rune. This rune is the general case for function calls. What we need to do is take a core, provide a sample, and pull an arm out of that core. `by` is the core and `put` is the arm out of that core that we want to pull. `by` is the `map` engine core that contains all the arms we are going to need to manipulate the map.
 
-It's worth pointing out that the syntax we have been using for function
-calls, that is `(foo bar)` could instead be written `~($ foo bar)` which is
-change `foo`'s sample to be `bar` and pull its `$` arm. There is a special
-form for this as a convenince for the most general case.
+It's worth pointing out that the syntax we have been using for function calls, that is `(foo bar)` could instead be written `~($ foo bar)` which is change `foo`'s sample to be `bar` and pull its `$` arm. There is a special form for this as a convenince for the most general case.
 
-`~(put by chart)` will actually produce for us a new gate we can then give
-two arguments to, `i.a` and `i.b`. Recall that in this context `i` is the
-head or first element of a list and `t` is the tail or the rest of the list.
-We are going to add an entry in our `map` where the head of the tape `a`
-maps to the value of the head of tape `b`.
+`~(put by chart)` will actually produce for us a new gate we can then give two arguments to, `i.a` and `i.b`. Recall that in this context `i` is the head or first element of a list and `t` is the tail or the rest of the list. 
 
+We are going to add an entry in our `map` where the head of the tape `a` maps to the value of the head of tape `b`.
 
 Let's reitterate the line of code in it's entirety. 
 
@@ -224,15 +170,10 @@ Let's reitterate the line of code in it's entirety.
       $(chart (~(put by chart) i.a i.b), a t.a, b t.b)
 ```
 
-Putting it all together, we are going to call the gate we are in again,
-changing `chart` to be the new `map` produced by adding the new entry.
-We are also changing `a` and `b` to be the tails of those. We're done
-with the head after putting it in the map so we're essentially cutting
-it from our `tape`. 
+Putting it all together, we are going to call the gate we are in again, changing `chart` to be the new `map` produced by adding the new entry. We are also changing `a` and `b` to be the tails of those. We're done with the head after putting it in the map so we're essentially cutting it from our `tape`. 
 
 Perhaps now you can understand why this arm is named `zipper`. It's
-putting two tapes togeather by matching pieces from each side, something
-akin to a jacket zipper.
+putting two tapes together by matching pieces from each side, something akin to a jacket zipper.
 
 Having finished the `zipper` arm lets move on.
 
@@ -252,12 +193,7 @@ the other two.
 ```
 
 Here again we create a gate that takes two `tapes`. We also see here
-we are again using `put by` but in this case we are feeding it a `map`
-produced by using the `zipper` arm we created before. We are adding
-an entry to the map where the space character maps to the space
-character. This is done to simplify handling of spaces in `tapes` we
-want to encode. We've opted to simply leaving them alone.
-
+we are again using `put by` but in this case we are feeding it a `map` produced by using the `zipper` arm we created before. We are adding an entry to the map where the space character maps to the space character. This is done to simplify handling of spaces in `tapes` we want to encode. We've opted to simply leaving them alone.
 
 ```
     ++  encoder
@@ -273,20 +209,12 @@ want to encode. We've opted to simply leaving them alone.
 `encoder` and `decoder` are implemented in terms of `coder` which is
 why we examined it first. These gates are essentially identical but
 with the arguments reversed. In both cases we create `keytape` which
-we acquire by calling `rott` on `alpha` our arm which contains a `tape`
-of the alphabet and providing it the key passed in. `coder` then will
-produce a `map` that has the first argument as the keys and the second
-as the values.
+we acquire by calling `rott` on `alpha` our arm which contains a `tape` of the alphabet and providing it the key passed in. `coder` then will produce a `map` that has the first argument as the keys and the second as the values.
 
 If our two inputs to `coder` were `"abcdefghijklmnopqrstuvwxyz"` and
-`"bcdefghijklmnopqrstuvwxyza"` We would get a `map` where `'a'` maps to
-`'b'`, `'b'` to `'c'` and so on. By doing this we can produce a `map`
-that gives us a translation between the alphabet and our shifted alphabet
-or vice versa.
+`"bcdefghijklmnopqrstuvwxyza"` We would get a `map` where `'a'` maps to `'b'`, `'b'` to `'c'` and so on. By doing this we can produce a `map` that gives us a translation between the alphabet and our shifted alphabet or vice versa.
 
-`encoder` and `decoder` are wrappers around `coder` to simplify the two
-common transactions you want to do, produce `maps` that we can use to
-encode and decode messages.
+`encoder` and `decoder` are wrappers around `coder` to simplify the two common transactions you want to do, produce `maps` that we can use to encode and decode messages.
 
 Still with us? Good. We are finally about to use all this stuff we've
 walked through.
@@ -307,31 +235,24 @@ walked through.
       (~(got by encoder) a)
 ```
 
-We are finally at the big three arms of this core, `shift`, `unshift`,
-and the heavy lifter `operate`.
+We are finally at the big three arms of this core, `shift`, `unshift`, and the heavy lifter `operate`.
 
 Again `shift` and `unshift` are implemented in terms of `operate`. If
 you have done programming in the past you are probably familiar with
 this sort of design, if not, the reason it is done this way is to 
 try to reduce instances of identical code.
 
-Both `shift` and `unshift` take a `tape` which is the message to encode
-or decode and an `@ud` which is a key for that operation. `operate` takes
-the message, a key, and an encoder, which is a `map`. Those encoders are
-produced by the `encoder` and `decoder` arms of the core.
+Both `shift` and `unshift` take a `tape` which is the message to encode or decode and an `@ud` which is a key for that operation. `operate` takes the message, a key, and an encoder, which is a `map`. Those encoders are produced by the `encoder` and `decoder` arms of the core.
 
 The only difference between `shift` and `unshift` is which one of the
 arms we are using to produce the encoder. 
 
 `operate` produces a `tape`. The `%+` rune allows us to pull an arm
 with a pair sample. The arm we are going to pull is `turn`. This arm
-takes two arguments, a `list` and a `gate` to apply to each element of 
-the `list`. You may have seen this pattern before in other languages
-often called map, not to be confused with Hoon `map`.
+takes two arguments, a `list` and a `gate` to apply to each element of the `list`. You may have seen this pattern before in other languages often called map, not to be confused with Hoon `map`.
 
 The gate we are going to run against each element of our `tape` is to
-look up an element in the `map` and produce the value, the value being
-the matching letter for our shift. 
+look up an element in the `map` and produce the value, the value being the matching letter for our shift. 
 
 If we then give our arm Caesar's famous statement
 
@@ -345,8 +266,7 @@ we should get the secret code.
 "m geqi m wea m gsruyivih"
 ```
 
-Our code is entirely secure! Of course this is a terrible code but it's
-fun.
+Our code is entirely secure! Of course this is a terrible code but it's fun.
 
 Exercises
 ---------
