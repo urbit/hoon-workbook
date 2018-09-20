@@ -31,7 +31,8 @@
 ** take a number and return a list of it's digits
 ** check if a string is a palendrome
 ** rpn calc
-** magic 8 ball
+** DONE magic 8 ball
+   - State "DONE"       from              [2018-09-19 Wed 11:02]
 ** sieve of eratosthenes
 *** apparently already in chapter 2
 ** Shuffle a deck of cards
