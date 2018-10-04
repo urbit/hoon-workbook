@@ -1,0 +1,158 @@
+Generators are the most straightforward way to write programs for Urbit. They are used for doing computations that do not require persistence. This could be anything from listing directory contents, to running unit tests, to fetching the contents of a url. 
+
+There are four kinds of generators: naked, `%say`, `%get`, and `%ask`. Let's take a look at naked generators.
+
+A naked generator is simply a `gate`. A `gate` is an anonymous function that takes a `sample` and produces a `noun`. All you need to do is write a `gate` and put it into file in the gen directory. 
+Let's take a look at a very simple one.
+
+```
+|=  a=*
+a
+```
+
+This generator takes one argument of any noun and produces it without any changes. If we put this into a file named `echo.hoon` in the gen directory, we could then run it like so.
+
+```
+> +echo 42
+42
+> +echo "asdf"
+[97 115 100 102 0]
+```
+
+So what exactly is happening here? The first result is as expected. We pass in 42 and get 42 back. But what about when we pass in `"asdf"`? We just get a pile of numbers back! This has to do with the type of data it is. All `atoms` are just numbers, and how they are interpreted is a matter of what `aura` is being applied to them. At the moment, we haven't specified an `aura`, leaving the pretty printer to fend for itself. `"asdf"` is a `tape` which is simply a `list` of `cords`. A `cord` is a a string of UTF-8 characters packed in Least Significant Byte Order (LSB). When used as part of a `tape` the `cord` is only a single character. This convention of a `list` of `cords` is easier to work with than working directly with `cords`.
+
+We can actually tell the `dojo` to apply a specific aura to the output of our generator to get a better output. 
+
+```
+> _tape +echo "asdf"
+"asdf"
+```
+
+Let's add another argument to our generator. 
+
+```
+|=  [a=@ud b=@ud]
+(add a b)
+```
+
+Let's go ahead and save this as `add.hoon` in our gen directory. Once we have done this we can run our generator again.
+
+```
+> +add [3 4]
+7
+```
+
+You may notice our generator takes a `cell` containing two `@ud`. This is actually one of the limitations of naked generators. We can only pass one argument. We can get around this of course by passing a `cell` but it's certainly less than ideal. A naked generator can also not be called without an argument. This brings us to `%say` generators.
+
+`%say` generators
+=================
+
+A `%say` generator is a `cell` the head of which is `%say` and the tail of which is a `gate` that produces a `cask`. A `cask` is pair of a `mark` and some data. You can think of a `mark` as something akin to a MIME type. It describes the data in some way, be it generically such as `%atom` or a standard such as `%json` or even application specific data structures like `%talk-command`. The tail is simply the data.
+
+Let's take an example of a `%say` generator.
+
+```
+:-  %say
+|=  *
+:-  %noun
+(add 40 2)
+```
+
+And it's output when run.
+
+```
+> +add
+42
+```
+
+Notice that this generator currently takes no arguments. We'll address that in a moment. For now let's focus on the format of the `%say` generator.
+
+```
+:-  %say
+```
+
+Recall that the rune `:-` is used to produce a cell and that the head of the cell we want to produce needs to be `%say`. 
+
+```
+|=  *
+:-  %noun
+(add 40 2)
+```
+
+We now need to create the tail of our `cell`. This gate will itself produce a `cask`. Here we've opted to just use the `mark` of `%noun`. The tail of the `cask` will be our actual data, in this case we are just adding 40 and 2 together but here we could do whatever we needed to in order to produce the correct data for whatever our `%say` generator is supposed to do. 
+
+Let's convert our generator into being something a little more useful. 
+
+```
+:-  %say
+|=  [* [a=@ud b=@ud ~] ~]
+:-  %noun
+(add a b)
+```
+
+Here again we're creating a `%say` generator but the sample of our gate is a little different than before. Previously we used `*` to indicate the subject was any `noun`, not really concerning ourselves with how it would get called. Now we'd like to have our own arguments to make this a little more usable.
+
+```
+|=  [* [a=@ud b=@ud ~] ~]
+```
+
+The sample in this `gate` is a tuple of three parts. The first part we simply allow any `noun`. We'll come back to this in a bit.
+
+The second part is a `list` of arguments we want to accept. Here we want to take two `@ud` and add them.
+
+The final part is a `list` of named arguments. Here we've opted to not use any.
+
+```
+> +add 40 2
+42
+```
+
+Let's take a look at the first part of the subject now.
+
+The first thing that gets passed is a tuple containing information about the state of the urbit ship. 
+
+```
+[now=@da eny=@uvJ bec=beak]
+```
+
+`now` is the current time.
+`eny` is 64 bytes of entropy for seeing random number generators.
+`bec` is the current `beak` which contains the current ship, desk, and case. (insert links to the docs on each of those things)
+
+Let's take a look at an example of using these. 
+
+```
+:-  %say
+|=  [[now=@da eny=@uvJ bec=beak] [n=@ud ~] ~]
+:-  %noun
+(~(rad og eny) n)
+```
+
+Now our sample has put faces on all of the standard arguments so we can easily access them.
+
+```
+(~(rad og eny) n)
+```
+
+Here we want to pull the `rad` arm out of the `og` core with the subject of `eny`. `eny` is our entropy value, so this is used to seed the generator. the `rad` arm will give us a psuedorandom number between 0 and `n`.
+
+If saved in the gen directory, we can run this generator like so.
+
+```
+> +dice 6
+0
+> +dice 6
+5
+> +dice 6
+2
+```
+
+`%ask` generators
+=================
+
+
+
+
+`%get` generators
+=================
+* TODO convert to an ask generator
