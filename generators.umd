@@ -150,9 +150,114 @@ If saved in the gen directory, we can run this generator like so.
 `%ask` generators
 =================
 
+`%ask` generators are used for creating interactive generators. Let's look at an example.
 
+```
+/-  sole
+/+  generators
+=,  [sole generators]
+:-  %ask
+|=  *
+^-  (sole-result (cask tang))
+%+  print    leaf+"What is your favorite color?"
+%+  prompt   [%& %prompt "color: "]
+|=  t=tape
+%+  produce  %tang
+?:  =(t "blue")
+  :~  leaf+"Oh. Thank you very much."
+      leaf+"Right. Off you go then."
+  ==
+:~  leaf+"Aaaaagh!"
+    leaf+"Into the Gorge of Eternal Peril with you!"
+==
+```
+
+
+First we need to bring in some of the types we are going to need from `sole` and gates we will use from `generators`.
+
+`/-` is a Ford rune used to import types from `sur`.
+
+`/+` is a Ford rune used to import libraries from `lib`.
+
+`=,` is a rune that allows us to expose a namespace. We do this to avoid having to do `sole-result:sole` instead of `sole-result` or `print:generators` instead of `print`.
+
+Just as `%say` generators, `%ask` generators need to produce a `cell` the head of which specifies what kind of generator we are running.
+
+With `|=  *` we create a gate and ignore the standard arguments we are given because we're not using them. 
+
+`^-  (sole-result (cask tang))`
+
+Buckle up because we are about to go through a fair bit of new terminology.
+
+`%ask` generators need to have the second half of the cell be a gate that produces a `sole-result` in this case one that particularly contains a `cask` of `tang`.
+
+It's not important that we know the details of `sole-result` at this point but you can read about it [here](link to documentation if that ever gets written). For now it's enough, to know that this it the type we need to produce with our generator. 
+
+A `cask` is a pair of a `mark` name and a `noun`. A `mark` can be thought of as a sort of MIME type for data. 
+
+A `tang` is a `list` of `tank` and a `tank` is a structure for printing data that there are three types: `leaf`, `palm`, and `rose`. A `leaf` is for printing a single noun, a `rose` is for printing rows of data, and a `palm` is printing backstep indented lists.
+
+
+Having imported `generators` we get several gates that we need. There are 6 gates:
+
+1. `print`
+2. `prompt`
+5. `parse`
+3. `curl`
+4. `no-product`
+6. `produce`
+
+`print` is used for printing a `tank` to the console.
+
+`prompt` is used to construct a prompt for the user to input information into.
+
+`parse` is used to parse the user input as it will be some form of typed data. For example, you can use `parse` to make sure that when you ask for a ship name, the user is only giving you a valid ship name.
+
+`curl` is used to make http requests and is used only in `%get` generators.
+
+`no-product` is used when the result of the `%ask` generator will be empty.
+
+`produce` is the final gate we are interested in and it is used to construct the final output of the generator.
+
+Let's look at some of these in the context of our `axe` generator
+
+```
+%+  print    leaf+"What is your favorite color?"
+```
+
+`%+` is the rune to call a gate and our gate `print` takes one argument which is a `tank` to print.
+
+ The `+` here is syntactic sugar for `[leaf "What is your favorite color?"]` that just makes it slightly easier to write.
+ 
+```
+%+  prompt   [%& %prompt "color: "]
+```
+
+`prompt` takes a single argument that is a tuple. The first element of tuple is a flag indicating if what the user typed should be echo'd out to them or hidden. `%&` will produce echo'd output and `%|` will hide the output for use in passwords or other secret text. See loobean documentation if this is unclear.
+
+The second argument is intended to be information to use to create autocomplete options for the prompt but this is as of the time of this writing, unimplemented.
+
+The final argument is a `tape` of what the prompt should look like.
+
+```
+|=  t=tape
+%+  produce  %tang
+?:  =(t "blue")
+  :~  leaf+"Oh. Thank you very much."
+      leaf+"Right. Off you go then."
+  ==
+:~  leaf+"Aaaaagh!"
+    leaf+"Into the Gorge of Eternal Peril with you!"
+==
+```
+
+Our gate here takes a `tape` that was produced by `prompt` if we needed another type of data we could use `parse` to obtain it.
+
+The rest of this generator should be understandable at this point.
+
+One quirk that you should be aware of is that `tang` prints in reverse order from how it is created. The reason for this is that `tang` was originally created to display stack trace information, which you want in reverse order. This leads to the annoyance that in this case we either have to specify our messages backwards or construct them in the order we want and then `flop` the `list` This is a [known issue](https://github.com/urbit/arvo/issues/840) and will be resolved at some point.
 
 
 `%get` generators
 =================
-* TODO convert to an ask generator
+
