@@ -1,7 +1,8 @@
-Write a core that has arms that can perform Caesar Shifts on a tape.
+Write a generator that contains a core that has arms that can perform Caesar Shifts on a tape.
 
 ```
 !:
+:-  %say
 =+  ^=  caesar
     |%
     ++  alpha  "abcdefghijklmnopqrstuvwxyz"
@@ -44,7 +45,11 @@ Write a core that has arms that can perform Caesar Shifts on a tape.
       =+  s=(trim (mod n length) m)
       (weld q.s p.s)
     --
-(shift.caesar "i came i saw i conquered" 4)
+|=  [* [msg=tape key=@ud ~] ~]
+:-  %noun
+=.  msg  (cass msg)
+:-  (shift.caesar msg key)
+(unshift.caesar msg key)
 ```
 
 Lets take the `caesar` core, arm by arm, starting with the utility functions.
@@ -267,6 +272,13 @@ we should get the secret code.
 ```
 
 Our code is entirely secure! Of course this is a terrible code but it's fun.
+
+Now that we have explored the core itself, the rest of the generator is simply handling the arguments so that we can call it from the dojo and shifting and unshifting the same text. In practice this functionality would probably be better cut into two generators, and putting our core we created in `caesar.hoon` in `lib` but that is another discussion.
+
+```
+> +caesar "m geqi m wea m gsruyivih" 4
+["q kium q aie q kwvycmzml" "i came i saw i conquered"]
+```
 
 Exercises
 ---------
