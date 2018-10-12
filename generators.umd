@@ -150,7 +150,7 @@ If saved in the gen directory, we can run this generator like so.
 `%ask` generators
 =================
 
-`%ask` generators are used for creating interactive generators. Let's look at an example.
+`%ask` generators are used for creating interactive generators. Let's look at an example. Save this as `axe.hoon` in `gen`.
 
 ```
 /-  sole
@@ -193,10 +193,9 @@ Buckle up because we are about to go through a fair bit of new terminology.
 
 It's not important that we know the details of `sole-result` at this point but you can read about it [here](link to documentation if that ever gets written). For now it's enough, to know that this it the type we need to produce with our generator. 
 
-A `cask` is a pair of a `mark` name and a `noun`. A `mark` can be thought of as a sort of MIME type for data. 
+A `cask` is a pair of a `mark` name and a `noun`. Again, a `mark` can be thought of as a sort of MIME type for data. 
 
 A `tang` is a `list` of `tank` and a `tank` is a structure for printing data that there are three types: `leaf`, `palm`, and `rose`. A `leaf` is for printing a single noun, a `rose` is for printing rows of data, and a `palm` is printing backstep indented lists.
-
 
 Having imported `generators` we get several gates that we need. There are 6 gates:
 
@@ -215,7 +214,7 @@ Having imported `generators` we get several gates that we need. There are 6 gate
 
 `curl` is used to make http requests and is used only in `%get` generators.
 
-`no-product` is used when the result of the `%ask` generator will be empty.
+`no-product` is used when the result of the generator will be empty.
 
 `produce` is the final gate we are interested in and it is used to construct the final output of the generator.
 
@@ -261,3 +260,101 @@ One quirk that you should be aware of is that `tang` prints in reverse order fro
 `%get` generators
 =================
 
+`%get` generators are used for making HTTP requests through `eyre`.
+This generator was written with https://ghibliapi.herokuapp.com/
+Specifically this was designed to use the films api and print the title of a specific entry.
+
+https://ghibliapi.herokuapp.com/films/58611129-2dbc-4a81-a72f-77ddfc1b1b49
+
+
+```
+/-  sole
+/+  generators
+=,  generators
+:-  %get
+|=  [* [url=tape ~] ~]
+^-  (sole-request:sole (cask json))
+%+  curl  (scan url auri:de-purl:html)
+|=  hit/httr:eyre
+?~  r.hit  !!
+=/  my-json  (de-json:html q.u.r.hit)
+?~  my-json  !!
+=,  dejs:format
+%+  produce  %json
+%.  %title
+%~  got  by
+%-  (om same)
+u.my-json
+```
+
+Here we import `sole` and `generators` and use `=,` on `generators`.
+
+Again we must produce a `cell` the head of which is `%get` and the tail is a gate that takes a `tape` which is the URL we are trying to access.
+
+```
+^-  (sole-request:sole (cask json))
+```
+
+Here we make sure our gate is producing a `sole-request` out of `sole` which contains a `cask` of the type `json`.
+
+```
+%+  curl  (scan url auri:de-purl:html)
+```
+
+Here we can see the start of the call to `curl` the first argument of which will parse our url and make sure it's in the proper format.
+
+The second part of the `curl` call is the `gate` that will get called with the result provided by the actual HTTP request.
+
+```
+|=  hit/httr:eyre
+?~  r.hit  !!
+=/  my-json  (de-json:html q.u.r.hit) 
+?~  my-json  !!
+=,  dejs:format
+%+  produce  %json
+%.  %title :: reverse order call
+%~  got  by
+%-  (om same)
+u.my-json
+```
+
+We need to verify that the `r` face of our response is not null before continuing. If it is null we will crash as there is nothing left to do.
+
+```
+=/  my-json  (de-json:html q.u.r.hit) 
+```
+
+For this API we got data returned to us in the json format but we really need it to be in the `json` hoon type also. That is what we are doing here. `q.u.r.hit` is the actual data we care about as a `cord`. `hit` is actually an entire response object, including headers, which we don't care about for this example. `de-json` out of `html` will parse the `cord` and produce a `json` type for us that we can then use to inspect the data.
+
+```
+?~  my-json  !!
+=,  dejs:format
+```
+
+After parsing the json structure we want to make sure we got back a valid `json` type so here we check if it's null and crash if it is.
+If not we are going to `=,` the `dejs:format` core so that we can more easily pull arms out of it.
+
+```
+%+  produce  %json
+%.  %title
+%~  got  by
+%-  (om same)
+u.my-json
+```
+
+Now we come to our `produce` call. Remember that `produce` is used in all the generators to make the final result and that here we want to produce a `cask` of `json` so we use the mark `%json` to indicate that.
+
+Next we have what may be an unfamiliar rune `%.`. This rune is simply `%-` with the argument order reversed. The idiomatic way to write Hoon is to have the heaviest twigs, or code paths, go to the bottom of the code which is why this is used here over `%-`. Use of this style is strongly encouraged as it produces code that is much easier to read.
+
+`%title` is the argument passed to the next gate that is called. `by` is the core that is the `map` engine. A Hoon `map` is a key value pair data structure, often referred to as a dictionary in other languages. `got` is the arm in `by` that will produce a gate that we can call to access members of a given `map`.
+
+At the moment, however, we do not have a `map` but instead have a `json` type. 
+
+```
+%-  (om same)
+u.my-json
+```
+
+Here we use `om` which is an arm in `dejs:format` that will take a `json` and return a `map`. `same` is a wet gate from the standard library that takes an argument of any type and returns it as that type. We could use any other gate to modify the data if that was useful for the particular data we are going to be processing, but here, we just want the data exactly as it currently is.
+
+`u.my-json` is actual `json` data in `my-json` and we provide that the gate produced by `om` which in turn produces a `map` that we give to `got` that produces a gate that we can then give `%title` to actually acquire the title element of json we got returned by our call to `curl`.
