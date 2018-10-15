@@ -1,53 +1,90 @@
-Generators are the most straightforward way to write programs for Urbit. They are used for doing computations that do not require persistence. This could be anything from listing directory contents, to running unit tests, to fetching the contents of a url. 
+Generators are the most straightforward way to write programs for Urbit. They
+are used for doing computations that do not require persistence: they take an
+input and produce an output, then disappear. Generators might make sense for
+for listing directory contents, or running unit tests, or fetching the
+contents of a URL.
 
-There are four kinds of generators: naked, `%say`, `%get`, and `%ask`. Let's take a look at naked generators.
+There are four kinds of generators: naked, `%say`, `%get`, and `%ask`.
 
-A naked generator is simply a `gate`. A `gate` is an anonymous function that takes a `sample` and produces a `noun`. All you need to do is write a `gate` and put it into file in the gen directory. 
-Let's take a look at a very simple one.
+### Naked Generators
+
+A naked generator is simply a `gate`; that is, an is an anonymous function that
+takes a `sample` (argument) and produces a `noun`. All you need to do is write a
+`gate` and put it into file in the `/gen` directory. Let's take a look at a very
+simple one:
 
 ```
 |=  a=*
 a
 ```
 
-This generator takes one argument of any noun and produces it without any changes. If we put this into a file named `echo.hoon` in the gen directory, we could then run it like so.
+This generator takes one argument of any noun and produces it without any
+changes. If we put this into a file named `echo.hoon` in the `/gen` directory,
+we can run it from the [Dojo](/docs/using/shell), like with the following
+commands:
 
 ```
 > +echo 42
 42
+```
+
+This command just pass in 42 and get 42 back. But what about when we pass in
+`"asdf"`?
+
+```
 > +echo "asdf"
 [97 115 100 102 0]
 ```
 
-So what exactly is happening here? The first result is as expected. We pass in 42 and get 42 back. But what about when we pass in `"asdf"`? We just get a pile of numbers back! This has to do with the type of data it is. All `atoms` are just numbers, and how they are interpreted is a matter of what `aura` is being applied to them. At the moment, we haven't specified an `aura`, leaving the pretty printer to fend for itself. `"asdf"` is a `tape` which is simply a `list` of `cords`. A `cord` is a a string of UTF-8 characters packed in Least Significant Byte Order (LSB). When used as part of a `tape` the `cord` is only a single character. This convention of a `list` of `cords` is easier to work with than working directly with `cords`.
+We just get a pile of numbers back, a raw `noun`. The numbers that compose
+that noun are `atoms`, and how they are interpreted is a matter of what
+`aura` is being applied to them. For the purposes of this example, an `aura`
+tells the pretty-printer how to display. In the example above, we didn't specify
+an `aura`, leaving the printer to fend for itself.
 
-We can actually tell the `dojo` to apply a specific aura to the output of our generator to get a better output. 
+`"asdf"` is a `tape`, one of our string types. A `tape` is simply a `list` of
+`cords`. A `cord` is an atom represented as text: UTF-8 characters packed in
+Least-Significant Byte (LSB) order. When used as part of a `tape` the `cord` is
+only a single character. This convention of a `list` of `cords` is easier to
+work with than working directly with `cords`.
+
+We can actually tell the `dojo` to apply a specific aura to the output of our
+generator to get a better output.
 
 ```
 > _tape +echo "asdf"
 "asdf"
 ```
 
-Let's add another argument to our generator. 
+Let's add another argument to our generator.
 
 ```
 |=  [a=@ud b=@ud]
 (add a b)
 ```
 
-Let's go ahead and save this as `add.hoon` in our gen directory. Once we have done this we can run our generator again.
+Let's ahead and save this as `add.hoon` in our `/gen` directory. Once we have
+done this we can run our generator again.
 
 ```
 > +add [3 4]
 7
 ```
 
-You may notice our generator takes a `cell` containing two `@ud`. This is actually one of the limitations of naked generators. We can only pass one argument. We can get around this of course by passing a `cell` but it's certainly less than ideal. A naked generator can also not be called without an argument. This brings us to `%say` generators.
+You may notice our generator takes a `cell` containing two `@ud`. This is
+actually one of the limitations of naked generators. We can only pass one
+argument. We can get around this of course by passing a `cell` but it's
+certainly less than ideal. A naked generator can also not be called without an
+argument. This brings us to `%say` generators.
 
-`%say` generators
-=================
+### `%say` Generators
 
-A `%say` generator is a `cell` the head of which is `%say` and the tail of which is a `gate` that produces a `cask`. A `cask` is pair of a `mark` and some data. You can think of a `mark` as something akin to a MIME type. It describes the data in some way, be it generically such as `%atom` or a standard such as `%json` or even application specific data structures like `%talk-command`. The tail is simply the data.
+A `%say` generator is a `cell` the head of which is `%say` and the tail of which
+is a `gate` that produces a `cask`. A `cask` is pair of a `mark` and some data.
+You can think of a `mark` as something akin to a MIME type. It describes the
+data in some way, be it generically such as `%atom` or a standard such as
+`%json` or even application specific data structures like `%talk-command`. The
+tail is simply the data.
 
 Let's take an example of a `%say` generator.
 
@@ -65,13 +102,15 @@ And it's output when run.
 42
 ```
 
-Notice that this generator currently takes no arguments. We'll address that in a moment. For now let's focus on the format of the `%say` generator.
+Notice that this generator currently takes no arguments. We'll address that in
+a moment. For now let's focus on the format of the `%say` generator.
 
 ```
 :-  %say
 ```
 
-Recall that the rune `:-` is used to produce a cell and that the head of the cell we want to produce needs to be `%say`. 
+Recall that the rune `:-` is used to produce a cell and that the head of the
+cell we want to produce needs to be `%say`.
 
 ```
 |=  *
@@ -79,9 +118,13 @@ Recall that the rune `:-` is used to produce a cell and that the head of the cel
 (add 40 2)
 ```
 
-We now need to create the tail of our `cell`. This gate will itself produce a `cask`. Here we've opted to just use the `mark` of `%noun`. The tail of the `cask` will be our actual data, in this case we are just adding 40 and 2 together but here we could do whatever we needed to in order to produce the correct data for whatever our `%say` generator is supposed to do. 
+We now need to create the tail of our `cell`. This gate will itself produce a
+`cask`. Here we've opted to just use the `mark` of `%noun`. The tail of the
+`cask` will be our actual data, in this case we are just adding 40 and 2
+together but here we could do whatever we needed to in order to produce the
+correct data for whatever our `%say` generator is supposed to do.
 
-Let's convert our generator into being something a little more useful. 
+Let's convert our generator into being something a little more useful.
 
 ```
 :-  %say
@@ -90,15 +133,20 @@ Let's convert our generator into being something a little more useful.
 (add a b)
 ```
 
-Here again we're creating a `%say` generator but the sample of our gate is a little different than before. Previously we used `*` to indicate the subject was any `noun`, not really concerning ourselves with how it would get called. Now we'd like to have our own arguments to make this a little more usable.
+Here again we're creating a `%say` generator but the sample of our gate is a
+little different than before. Previously we used `*` to indicate the subject
+was any `noun`, not really concerning ourselves with how it would get called.
+Now we'd like to have our own arguments to make this a little more usable.
 
 ```
 |=  [* [a=@ud b=@ud ~] ~]
 ```
 
-The sample in this `gate` is a tuple of three parts. The first part we simply allow any `noun`. We'll come back to this in a bit.
+The sample in this `gate` is a tuple of three parts. The first part we simply
+allow any `noun`. We'll come back to this in a bit.
 
-The second part is a `list` of arguments we want to accept. Here we want to take two `@ud` and add them.
+The second part is a `list` of arguments we want to accept. Here we want to take
+two `@ud` and add them.
 
 The final part is a `list` of named arguments. Here we've opted to not use any.
 
@@ -109,7 +157,8 @@ The final part is a `list` of named arguments. Here we've opted to not use any.
 
 Let's take a look at the first part of the subject now.
 
-The first thing that gets passed is a tuple containing information about the state of the urbit ship. 
+The first thing that gets passed is a tuple containing information about the
+state of the urbit ship.
 
 ```
 [now=@da eny=@uvJ bec=beak]
@@ -117,9 +166,10 @@ The first thing that gets passed is a tuple containing information about the sta
 
 `now` is the current time.
 `eny` is 64 bytes of entropy for seeing random number generators.
-`bec` is the current `beak` which contains the current ship, desk, and case. (insert links to the docs on each of those things)
+`bec` is the current `beak` which contains the current ship, desk, and case.
+(insert links to the docs on each of those things)
 
-Let's take a look at an example of using these. 
+Let's take a look at an example of using these.
 
 ```
 :-  %say
@@ -128,13 +178,16 @@ Let's take a look at an example of using these.
 (~(rad og eny) n)
 ```
 
-Now our sample has put faces on all of the standard arguments so we can easily access them.
+Now our sample has put faces on all of the standard arguments so we can easily
+access them.
 
 ```
 (~(rad og eny) n)
 ```
 
-Here we want to pull the `rad` arm out of the `og` core with the subject of `eny`. `eny` is our entropy value, so this is used to seed the generator. the `rad` arm will give us a psuedorandom number between 0 and `n`.
+Here we want to pull the `rad` arm out of the `og` core with the subject of
+`eny`. `eny` is our entropy value, so this is used to seed the generator. the
+`rad` arm will give us a psuedorandom number between 0 and `n`.
 
 If saved in the gen directory, we can run this generator like so.
 
@@ -150,7 +203,8 @@ If saved in the gen directory, we can run this generator like so.
 `%ask` generators
 =================
 
-`%ask` generators are used for creating interactive generators. Let's look at an example. Save this as `axe.hoon` in `gen`.
+`%ask` generators are used for creating interactive generators. Let's look at an
+example. Save this as `axe.hoon` in `gen`.
 
 ```
 /-  sole
@@ -173,31 +227,46 @@ If saved in the gen directory, we can run this generator like so.
 ```
 
 
-First we need to bring in some of the types we are going to need from `sole` and gates we will use from `generators`.
+First we need to bring in some of the types we are going to need from `sole` and
+gates we will use from `generators`.
 
 `/-` is a Ford rune used to import types from `sur`.
 
 `/+` is a Ford rune used to import libraries from `lib`.
 
-`=,` is a rune that allows us to expose a namespace. We do this to avoid having to do `sole-result:sole` instead of `sole-result` or `print:generators` instead of `print`.
+`=,` is a rune that allows us to expose a namespace. We do this to avoid having
+to do `sole-result:sole` instead of `sole-result` or `print:generators` instead
+of `print`.
 
-Just as `%say` generators, `%ask` generators need to produce a `cell` the head of which specifies what kind of generator we are running.
+Just as `%say` generators, `%ask` generators need to produce a `cell` the head
+of which specifies what kind of generator we are running.
 
-With `|=  *` we create a gate and ignore the standard arguments we are given because we're not using them. 
+With `|=  *` we create a gate and ignore the standard arguments we are given
+because we're not using them.
 
 `^-  (sole-result (cask tang))`
 
 Buckle up because we are about to go through a fair bit of new terminology.
 
-`%ask` generators need to have the second half of the cell be a gate that produces a `sole-result` in this case one that particularly contains a `cask` of `tang`.
+`%ask` generators need to have the second half of the cell be a gate that
+produces a `sole-result` in this case one that particularly contains a `cask` of
+`tang`.
 
-It's not important that we know the details of `sole-result` at this point but you can read about it [here](link to documentation if that ever gets written). For now it's enough, to know that this it the type we need to produce with our generator. 
+It's not important that we know the details of `sole-result` at this point but
+you can read about it [here](link to documentation if that ever gets written).
+For now it's enough, to know that this it the type we need to produce with our
+generator.
 
-A `cask` is a pair of a `mark` name and a `noun`. Again, a `mark` can be thought of as a sort of MIME type for data. 
+A `cask` is a pair of a `mark` name and a `noun`. Again, a `mark` can be thought
+of as a sort of MIME type for data.
 
-A `tang` is a `list` of `tank` and a `tank` is a structure for printing data that there are three types: `leaf`, `palm`, and `rose`. A `leaf` is for printing a single noun, a `rose` is for printing rows of data, and a `palm` is printing backstep indented lists.
+A `tang` is a `list` of `tank` and a `tank` is a structure for printing data
+that there are three types: `leaf`, `palm`, and `rose`. A `leaf` is for printing
+a single noun, a `rose` is for printing rows of data, and a `palm` is printing
+backstep indented lists.
 
-Having imported `generators` we get several gates that we need. There are 6 gates:
+Having imported `generators` we get several gates that we need. There are 6
+gates:
 
 1. `print`
 2. `prompt`
@@ -210,13 +279,16 @@ Having imported `generators` we get several gates that we need. There are 6 gate
 
 `prompt` is used to construct a prompt for the user to input information into.
 
-`parse` is used to parse the user input as it will be some form of typed data. For example, you can use `parse` to make sure that when you ask for a ship name, the user is only giving you a valid ship name.
+`parse` is used to parse the user input as it will be some form of typed data.
+For example, you can use `parse` to make sure that when you ask for a ship name,
+the user is only giving you a valid ship name.
 
 `curl` is used to make http requests and is used only in `%get` generators.
 
 `no-product` is used when the result of the generator will be empty.
 
-`produce` is the final gate we are interested in and it is used to construct the final output of the generator.
+`produce` is the final gate we are interested in and it is used to construct
+the final output of the generator.
 
 Let's look at some of these in the context of our `axe` generator
 
@@ -224,17 +296,24 @@ Let's look at some of these in the context of our `axe` generator
 %+  print    leaf+"What is your favorite color?"
 ```
 
-`%+` is the rune to call a gate and our gate `print` takes one argument which is a `tank` to print.
+`%+` is the rune to call a gate and our gate `print` takes one argument which
+is a `tank` to print.
 
- The `+` here is syntactic sugar for `[leaf "What is your favorite color?"]` that just makes it slightly easier to write.
- 
+ The `+` here is syntactic sugar for `[leaf "What is your favorite color?"]`
+ that just makes it slightly easier to write.
+
 ```
 %+  prompt   [%& %prompt "color: "]
 ```
 
-`prompt` takes a single argument that is a tuple. The first element of tuple is a flag indicating if what the user typed should be echo'd out to them or hidden. `%&` will produce echo'd output and `%|` will hide the output for use in passwords or other secret text. See loobean documentation if this is unclear.
+`prompt` takes a single argument that is a tuple. The first element of tuple is
+a flag indicating if what the user typed should be echo'd out to them or hidden.
+`%&` will produce echo'd output and `%|` will hide the output for use in
+passwords or other secret text. See loobean documentation if this is unclear.
 
-The second argument is intended to be information to use to create autocomplete options for the prompt but this is as of the time of this writing, unimplemented.
+The second argument is intended to be information to use to create autocomplete
+options for the prompt but this is as of the time of this writing,
+unimplemented.
 
 The final argument is a `tape` of what the prompt should look like.
 
@@ -262,7 +341,8 @@ One quirk that you should be aware of is that `tang` prints in reverse order fro
 
 `%get` generators are used for making HTTP requests through `eyre`.
 This generator was written with https://ghibliapi.herokuapp.com/
-Specifically this was designed to use the films api and print the title of a specific entry.
+Specifically this was designed to use the films api and print the title of a
+specific entry.
 
 https://ghibliapi.herokuapp.com/films/58611129-2dbc-4a81-a72f-77ddfc1b1b49
 
@@ -289,26 +369,30 @@ u.my-json
 
 Here we import `sole` and `generators` and use `=,` on `generators`.
 
-Again we must produce a `cell` the head of which is `%get` and the tail is a gate that takes a `tape` which is the URL we are trying to access.
+Again we must produce a `cell` the head of which is `%get` and the tail is a
+gate that takes a `tape` which is the URL we are trying to access.
 
 ```
 ^-  (sole-request:sole (cask json))
 ```
 
-Here we make sure our gate is producing a `sole-request` out of `sole` which contains a `cask` of the type `json`.
+Here we make sure our gate is producing a `sole-request` out of `sole` which
+contains a `cask` of the type `json`.
 
 ```
 %+  curl  (scan url auri:de-purl:html)
 ```
 
-Here we can see the start of the call to `curl` the first argument of which will parse our url and make sure it's in the proper format.
+Here we can see the start of the call to `curl` the first argument of which
+will parse our url and make sure it's in the proper format.
 
-The second part of the `curl` call is the `gate` that will get called with the result provided by the actual HTTP request.
+The second part of the `curl` call is the `gate` that will get called with the
+result provided by the actual HTTP request.
 
 ```
 |=  hit/httr:eyre
 ?~  r.hit  !!
-=/  my-json  (de-json:html q.u.r.hit) 
+=/  my-json  (de-json:html q.u.r.hit)
 ?~  my-json  !!
 =,  dejs:format
 %+  produce  %json
@@ -318,21 +402,28 @@ The second part of the `curl` call is the `gate` that will get called with the r
 u.my-json
 ```
 
-We need to verify that the `r` face of our response is not null before continuing. If it is null we will crash as there is nothing left to do.
+We need to verify that the `r` face of our response is not null before
+continuing. If it is null we will crash as there is nothing left to do.
 
 ```
-=/  my-json  (de-json:html q.u.r.hit) 
+=/  my-json  (de-json:html q.u.r.hit)
 ```
 
-For this API we got data returned to us in the json format but we really need it to be in the `json` hoon type also. That is what we are doing here. `q.u.r.hit` is the actual data we care about as a `cord`. `hit` is actually an entire response object, including headers, which we don't care about for this example. `de-json` out of `html` will parse the `cord` and produce a `json` type for us that we can then use to inspect the data.
+For this API we got data returned to us in the json format but we really need
+it to be in the `json` hoon type also. That is what we are doing here.
+`q.u.r.hit` is the actual data we care about as a `cord`. `hit` is actually an
+entire response object, including headers, which we don't care about for this
+example. `de-json` out of `html` will parse the `cord` and produce a `json` type
+for us that we can then use to inspect the data.
 
 ```
 ?~  my-json  !!
 =,  dejs:format
 ```
 
-After parsing the json structure we want to make sure we got back a valid `json` type so here we check if it's null and crash if it is.
-If not we are going to `=,` the `dejs:format` core so that we can more easily pull arms out of it.
+After parsing the json structure we want to make sure we got back a valid `json`
+type so here we check if it's null and crash if it is. If not we are going to
+`=,` the `dejs:format` core so that we can more easily pull arms out of it.
 
 ```
 %+  produce  %json
@@ -342,19 +433,35 @@ If not we are going to `=,` the `dejs:format` core so that we can more easily pu
 u.my-json
 ```
 
-Now we come to our `produce` call. Remember that `produce` is used in all the generators to make the final result and that here we want to produce a `cask` of `json` so we use the mark `%json` to indicate that.
+Now we come to our `produce` call. Remember that `produce` is used in all the
+generators to make the final result and that here we want to produce a `cask` of
+`json` so we use the mark `%json` to indicate that.
 
-Next we have what may be an unfamiliar rune `%.`. This rune is simply `%-` with the argument order reversed. The idiomatic way to write Hoon is to have the heaviest twigs, or code paths, go to the bottom of the code which is why this is used here over `%-`. Use of this style is strongly encouraged as it produces code that is much easier to read.
+Next we have what may be an unfamiliar rune `%.`. This rune is simply `%-` with
+the argument order reversed. The idiomatic way to write Hoon is to have the
+heaviest twigs, or code paths, go to the bottom of the code which is why this
+is used here over `%-`. Use of this style is strongly encouraged as it produces
+code that is much easier to read.
 
-`%title` is the argument passed to the next gate that is called. `by` is the core that is the `map` engine. A Hoon `map` is a key value pair data structure, often referred to as a dictionary in other languages. `got` is the arm in `by` that will produce a gate that we can call to access members of a given `map`.
+`%title` is the argument passed to the next gate that is called. `by` is the
+core that is the `map` engine. A Hoon `map` is a key value pair data structure,
+often referred to as a dictionary in other languages. `got` is the arm in `by`
+that will produce a gate that we can call to access members of a given `map`.
 
-At the moment, however, we do not have a `map` but instead have a `json` type. 
+At the moment, however, we do not have a `map`, but instead have a `json` type.
 
 ```
 %-  (om same)
 u.my-json
 ```
 
-Here we use `om` which is an arm in `dejs:format` that will take a `json` and return a `map`. `same` is a wet gate from the standard library that takes an argument of any type and returns it as that type. We could use any other gate to modify the data if that was useful for the particular data we are going to be processing, but here, we just want the data exactly as it currently is.
+Here we use `om` which is an arm in `dejs:format` that will take a `json` and
+return a `map`. `same` is a wet gate from the standard library that takes an
+argument of any type and returns it as that type. We could use any other gate to
+modify the data if that was useful for the particular data we are going to be
+processing, but here, we just want the data exactly as it currently is.
 
-`u.my-json` is actual `json` data in `my-json` and we provide that the gate produced by `om` which in turn produces a `map` that we give to `got` that produces a gate that we can then give `%title` to actually acquire the title element of json we got returned by our call to `curl`.
+`u.my-json` is actual `json` data in `my-json` and we provide that the gate
+produced by `om` which in turn produces a `map` that we give to `got` that
+produces a gate that we can then give `%title` to actually acquire the title
+element of json we got returned by our call to `curl`.

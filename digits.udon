@@ -15,7 +15,9 @@ Write a generator that can take a `@ud` and return a list of it's digits.
 ==
 ```
 
-We're creating a `%say` generator which requires us to produce a specially formatted `cell`
+We're creating a `%say` generator which requires us to produce a specially
+formatted `cell`
+
 ```
 [%say [%noun "data"]]
 ```
@@ -26,7 +28,7 @@ The head is the literal `%say` and the tail is a `cell` with a head indicating t
 |=  [* [n=@ud ~] ~]
 ```
 
-When running a generator, `dojo` will do type analyses to determine which arguments to give to the generator. The arguments are generally a `cell` the head of which contains a set of arguments passed to every generator. In this instance we have chosen to ignore them since they will not be needed. For more information about these argument, see the generator documentation. 
+When running a generator, `dojo` will do type analyses to determine which arguments to give to the generator. The arguments are generally a `cell` the head of which contains a set of arguments passed to every generator. In this instance we have chosen to ignore them since they will not be needed. For more information about these argument, see the generator documentation.
 
 The tail of this cell is where we can describe any arguments we are expecting to be passed in when the generator is called. So we can see that we are expecting an argument `n` that is of type `@ud`.
 
@@ -52,7 +54,7 @@ Now we need to create the gate. We are actually able to reuse `lis` as defining 
 
 There are two cases. If `n` is less than or equal to 0 we simply return `lis` else we need to perform some operations.
 
-`%=` is the rune that allows us to take a wing with changes. The changes are to divide `n` by 10 to produce the next value for `n`, and to also add `(mod n 10)` onto the front of `lis`. `x^y` is equivalent to `[x y]`. `mod` takes the remainder from dividing `n` by 10. 
+`%=` is the rune that allows us to take a wing with changes. The changes are to divide `n` by 10 to produce the next value for `n`, and to also add `(mod n 10)` onto the front of `lis`. `x^y` is equivalent to `[x y]`. `mod` takes the remainder from dividing `n` by 10.
 
 Doing this will essentially pull each digit out of `n` and put it into a `list`.
 

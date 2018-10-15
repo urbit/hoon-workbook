@@ -68,7 +68,7 @@ Ready?
 
 We're going to create a gate that takes two arguments, `m` as a `tape` and `n` as an `@ud`.
 
-Next we store the length of `m` for making the following code a little clearer. 
+Next we store the length of `m` for making the following code a little clearer.
 
 What we are doing in creating `s` is splitting it into two parts, `p` and `q`. The reason for calling `mod` is to make sure we split our `tape` at the correct place, even if `n` is larger than `length`.
 
@@ -127,14 +127,14 @@ Since we have already discussed what our gate here is supposed to do, let's dig 
 
 Recall that `|-` is used to form a gate and `kick` or call it immediately. Conceptually, you could think of `|-` as a "recursion point."
 
-We then are going to figure out if either list is empty. Given that we know that both lists are of the same length at this point, why do we check both lists to see if they are empty or not? Wouldn't it be just as effective to only check one given that we want to pair each element together? 
+We then are going to figure out if either list is empty. Given that we know that both lists are of the same length at this point, why do we check both lists to see if they are empty or not? Wouldn't it be just as effective to only check one given that we want to pair each element together?
 
 Digression about types
 ----------------------
 
 At this point we have seen that we have to explicitly check if a `tape` is empty before we can use the faces in it. Why? Remember that a `tape` is actually a `list` Conceptually, we have just assumed we knew what a `list` is but it's time to stop assuming. A `list` is actually a `fork` of `lest` and `~`.
 
-But what does that mean?  A `lest` is what you are probably thinking of when you think of `list`. It's a cell of at least two items, the head is the first thing in the list and the tail is the rest of the list. 
+But what does that mean?  A `lest` is what you are probably thinking of when you think of `list`. It's a cell of at least two items, the head is the first thing in the list and the tail is the rest of the list.
 
 `~` is the constant which stands for a value with no information.
 
@@ -165,17 +165,17 @@ This part of that in particular is worth breaking down further. We are using the
 
 It's worth pointing out that the syntax we have been using for function calls, that is `(foo bar)` could instead be written `~($ foo bar)` which is change `foo`'s sample to be `bar` and pull its `$` arm. There is a special form for this as a convenince for the most general case.
 
-`~(put by chart)` will actually produce for us a new gate we can then give two arguments to, `i.a` and `i.b`. Recall that in this context `i` is the head or first element of a list and `t` is the tail or the rest of the list. 
+`~(put by chart)` will actually produce for us a new gate we can then give two arguments to, `i.a` and `i.b`. Recall that in this context `i` is the head or first element of a list and `t` is the tail or the rest of the list.
 
 We are going to add an entry in our `map` where the head of the tape `a` maps to the value of the head of tape `b`.
 
-Let's reitterate the line of code in it's entirety. 
+Let's reitterate the line of code in it's entirety.
 
 ```
       $(chart (~(put by chart) i.a i.b), a t.a, b t.b)
 ```
 
-Putting it all together, we are going to call the gate we are in again, changing `chart` to be the new `map` produced by adding the new entry. We are also changing `a` and `b` to be the tails of those. We're done with the head after putting it in the map so we're essentially cutting it from our `tape`. 
+Putting it all together, we are going to call the gate we are in again, changing `chart` to be the new `map` produced by adding the new entry. We are also changing `a` and `b` to be the tails of those. We're done with the head after putting it in the map so we're essentially cutting it from our `tape`.
 
 Perhaps now you can understand why this arm is named `zipper`. It's
 putting two tapes together by matching pieces from each side, something akin to a jacket zipper.
@@ -244,20 +244,20 @@ We are finally at the big three arms of this core, `shift`, `unshift`, and the h
 
 Again `shift` and `unshift` are implemented in terms of `operate`. If
 you have done programming in the past you are probably familiar with
-this sort of design, if not, the reason it is done this way is to 
+this sort of design, if not, the reason it is done this way is to
 try to reduce instances of identical code.
 
 Both `shift` and `unshift` take a `tape` which is the message to encode or decode and an `@ud` which is a key for that operation. `operate` takes the message, a key, and an encoder, which is a `map`. Those encoders are produced by the `encoder` and `decoder` arms of the core.
 
 The only difference between `shift` and `unshift` is which one of the
-arms we are using to produce the encoder. 
+arms we are using to produce the encoder.
 
 `operate` produces a `tape`. The `%+` rune allows us to pull an arm
 with a pair sample. The arm we are going to pull is `turn`. This arm
 takes two arguments, a `list` and a `gate` to apply to each element of the `list`. You may have seen this pattern before in other languages often called map, not to be confused with Hoon `map`.
 
 The gate we are going to run against each element of our `tape` is to
-look up an element in the `map` and produce the value, the value being the matching letter for our shift. 
+look up an element in the `map` and produce the value, the value being the matching letter for our shift.
 
 If we then give our arm Caesar's famous statement
 
@@ -287,5 +287,5 @@ Exercises
 
 2. Extend our core to allow for using characters other than a-z.
 
-3. Build a gate that can take a Caesar shifted `tape` and produce 
+3. Build a gate that can take a Caesar shifted `tape` and produce
 possible unshifted `tapes`.
