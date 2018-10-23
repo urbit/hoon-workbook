@@ -252,7 +252,7 @@ first.
 
 We use `put by` on the next line, giving it a `map` produced by the `zipper`
 arm that we created before. This adds an entry to the map where the space
-character (called `ace`) maps to the itslrf. This is done to simplify
+character (called `ace`) simply maps to itself. This is done to simplify
 the handling of spaces in `tapes` we want to encode, since we don't want to
 shift them.
 
