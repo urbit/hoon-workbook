@@ -1,4 +1,29 @@
-Write a generator that contains a core that has arms that can perform Caesar Shifts on a tape.
+## Caesar Cipher
+
+A Caesar cipher is a very simple way to obfuscate a message. The technique
+takes a string and swaps out each component letter with another letter that is
+a specified number of positions up or down in the alphabet. For example, with a
+"right-shift" of 1, `a` would become `b`, `j` would become `k`, and `z` would
+wrap around back to `a`.
+
+Consider the message below, and the cipher that results when we Caesar-shift the
+message to the right by 1.
+
+```
+Plaintext message:    "do not give way to anger"
+Right-shifted cipher: "ep opu hjwf xbz up bohfs"
+```
+
+Note that the Caesar cipher is completely unsuitable for actually securing
+information. Implementing it in a program is just a fun exercise.
+
+### A Caesar Cipher In Hoon
+
+Below is a generator that performs a Caesar cipher on a tape. This example
+isn't the most compact implementation of such a cipher in Hoon, but it
+demonstrates important principles that more laconic code would not. Save it as
+`caesar.hoon` in your `/gen` directory.
+
 
 ```
 !:
@@ -52,7 +77,87 @@ Write a generator that contains a core that has arms that can perform Caesar Shi
 (unshift.caesar msg key)
 ```
 
-Lets take the `caesar` core, arm by arm, starting with the utility functions.
+This generator takes two arguments: a `tape`, which is your plaintext message,
+and an unsigned integer, which is the shift-value of the cipher. It produces
+a cell of two `tapes`: one that has been shifted right by the value, and another
+that has been shifted left. It also converts any uppercase input into lowercase.
+
+Try it out in the Dojo:
+
+```
+> +caesar "test" 2
+["vguv" "rcqr"]
+
+> +caesar "test" 26
+["test" "test"]
+
+> +caesar "test" 28
+["vguv" "rcqr"]
+
+> +caesar "test" 104
+["test" "test"]
+
+> +caesar "tESt" 2
+["vguv" "rcqr"]
+
+> +caesar "test!" 2
+nest-fail
+
+```
+
+##### Examining Our Code
+
+Let's examine our `caesar.hoon` code piece by piece. We won't necessarily go
+in written order; instead, we'll cover code in the intuitive order of the
+program. For each chunk that we cover, try to read and understand the code
+itself before reading the explanation.
+
+```
+!:
+:-  %say
+=+  ^=  caesar
+    |%
+```
+
+The `!:` in the first line of the above code enables a full stack trace in the
+event of an error.
+
+`:-  %say` begins to construct a cell with `%say` as the head, and the code that
+follows as the tail. This causes the Arvo to interpret the file as a
+[`%say` generator](/docs/tutorials/generators).
+
+`=+` adds a noun the subject, `=^  caesar` names that noun, and `|%` is used
+to create a core that contains the following arms. This results in having a core
+with the face `caesar` that we can call.
+
+Now let's look at the rest of the program that is outside of our core:
+
+```
+|=  [* [msg=tape key=@ud ~] ~]
+:-  %noun
+=.  msg  (cass msg)
+:-  (shift.caesar msg key)
+(unshift.caesar msg key)
+```
+
+The top line creates a gate with `|=`. The sample of that gate follows the
+scheme used by `%say` generators: it's a 3-tuple whose parts allow for different
+kinds of data. We only need non-optional arguments, though, so we only fill in
+the second part. There we take a `msg` argument and a `key` argument. We use a
+`*` and a `~` in the first part (Arvo data) and third part (optional arguments),
+respectively, because we aren't using them here. See the
+[generator documentation](/docs/tutorials/generators) for more information.
+
+`:-  %noun` simply labels the output of this program as the `%noun` mark.
+
+`=.  msg  (cass msg)` changes the input string `msg` to lowercases. `=.` changes
+the leg of the subject to something else. In our case, the leg to be changed is
+`msg`, and the thing to replace it is `(cass msg)`. `cass` is a standard-library
+gate that converts uppercase letters to lowercase.
+
+`:-  (shift.caesar msg key)` and `(unshift.caesar msg key)` simply composes a
+cell of a right-shifted cipher and a left-shifted cell. This is the final output
+of our generator.
 
 ```
     ++  rott
@@ -62,19 +167,24 @@ Lets take the `caesar` core, arm by arm, starting with the utility functions.
       (weld q.s p.s)
 ```
 
-See if you can decipher this arm before continuing on.
+The `rott` arm takes takes a specified number of characters off of a tape and
+puts them on the end of the tape.
 
-Ready?
+`|=  [m=tape n=@ud]` creates a gate that takes two arguments: `m`, a `tape`,
+and `n`, a `@ud`.
 
-We're going to create a gate that takes two arguments, `m` as a `tape` and `n` as an `@ud`.
+`=/  length=@ud  (lent m)` stores the length of `m` to make the following
+code a little clearer.
 
-Next we store the length of `m` for making the following code a little clearer.
+`trim` is a a gate from the standard library that splits a tape at into two
+parts at a specified position. So `=+  s=(trim (mod n length) m)` splits the
+tape `m` into two parts, `p` and `q`, and stores it in `s`. We call the modulus
+operation `mod` to make sure that we split our `tape` at the correct place, even
+if `n` is larger than `length`.
 
-What we are doing in creating `s` is splitting it into two parts, `p` and `q`. The reason for calling `mod` is to make sure we split our `tape` at the correct place, even if `n` is larger than `length`.
-
-The final part is to use `weld`, which combines two strings, to flip the two parts of `s` around where `q.s` was the tail, and `p.s` was the head.
-
-So... what is this gate actually acomplishing? We are taking the first `n` characters off of `m` and putting them on the end of the `tape`. Why we are doing this will become clear in a bit.
+`(weld q.s p.s)` uses `weld`, which combines two strings into one. In this
+instance, we are switching the two parts: the second part `q.s` is welded to the
+front, and the first part `p.s` is welded to the back.
 
 ```
     ++  zipper
@@ -84,112 +194,53 @@ So... what is this gate actually acomplishing? We are taking the first `n` chara
       ?.  =((lent a) (lent b))
         ~|  %uneven-lengths  !!
       |-
-      ?:  ?=(~ b)
-          chart
-      $(chart (~(put by chart) i.a i.b), a t.a, b t.b)
-```
-
-Next up we have the `zipper` arm. Again, try to see if you can understand this code before reading the explaination. Reading code is a difficult skill that takes effort to master, just as you had to master reading English.
-
-Ready?
-
-Okay so we have a gate that takes two tapes `a` and `b` and we can see by the use of `^-` that we are going to end up producing a `map` with `cord` keys and `cord` values. What is a `map`? This is a type equivalent to a dictionary in other languages, it's an associative data structure that `map`s a key to a value. If, for example, we wanted to have an association between `a` and 1 and `b` and 2 we could use a map. It might help to visual it this way.
-
-```
-map
-  a => 1
-  b => 2
-  c => 3
-
-```
-
-In the case of a `map`, we are free to use whatever types are appropriate to our situation for both keys and values.
-
-What is a `cord` and why are we producing a map of them? A `cord` is a string of UTF-8 characters packed in Least Significant Byte Order (LSB).So far we have not really defined what exactly a `tape` is.  It's time to do that. A `tape` is actually just a `list` of `cord` that are generally only a single character each. This makes them easier to manipulate that simply working with raw `cords`.
-
-So then if `tapes` are easier to manipulate, why then are we producing `cords`? In this case what we are going to to be doing is maping a single element of a `tape` to another element of a `tape`, which as we have established as being a `cord`. This will simplify our use of this method and we don't need to manipulate the keys or values, simply look them up.
-
-```
-      ?.  =((lent a) (lent b))
-        ~|  %uneven-lengths  !!
-```
-
-It's worth pointing out that if we feed this two tapes of different lengths, our method will simply blow up with the use of `!!`.
-
-Since we have already discussed what our gate here is supposed to do, let's dig into the how.
-
-```
-      |-
       ?:  |(?=(~ a) ?=(~ b))
           chart
       $(chart (~(put by chart) i.a i.b), a t.a, b t.b)
 ```
 
-Recall that `|-` is used to form a gate and `kick` or call it immediately. Conceptually, you could think of `|-` as a "recursion point."
+The `zipper` arm takes two tapes and creates a `map` out of them -- an
+an association between their elements.
 
-We then are going to figure out if either list is empty. Given that we know that both lists are of the same length at this point, why do we check both lists to see if they are empty or not? Wouldn't it be just as effective to only check one given that we want to pair each element together?
+So then if `tapes` are easier to manipulate, why then are we producing `cords`?
+In this case what we are going to to be doing is mapping a single element of a `
+tape` to another element of a `tape`, which as we have established as being a
+`cord`. This will simplify our use of this method and we don't need to
+manipulate the keys or values, simply look them up.
 
-Digression about types
-----------------------
+`|=  [a=tape b=tape]` builds a gate that takes two tapes, `a` and `b`, as its
+sample.
 
-At this point we have seen that we have to explicitly check if a `tape` is empty before we can use the faces in it. Why? Remember that a `tape` is actually a `list` Conceptually, we have just assumed we knew what a `list` is but it's time to stop assuming. A `list` is actually a `fork` of `lest` and `~`.
+`^-  (map @t @t)` casts the gate to a `map` with a `cord` key and a `cord`
+value. A `map` is a type equivalent to a dictionary in other languages: it's a
+data structure that associates a key with a value. If, for example, we wanted
+to have an association between `a` and 1 and `b` and 2, we could use a `map`.
 
-But what does that mean?  A `lest` is what you are probably thinking of when you think of `list`. It's a cell of at least two items, the head is the first thing in the list and the tail is the rest of the list.
+`=|  chart=(map @t @t)` adds a noun to the subject with the default value of
+the `(map @t @t)` type, and gives that noun the face `chart`.
 
-`~` is the constant which stands for a value with no information.
+`?.  =((lent a) (lent b))` checks if the two tapes are the same length. If not,
+the program crashes.
 
-A `fork` may be familiar in terms of set theory. A type can be thought of as a set of possible values. For example, the set of values for `@ud` would be the set of all natural numbers. A `fork` is a union of types.
+`|-` sets a recursion point.
 
-(diagram here to explain unions)
+`?:  |(?=(~ a) ?=(~ b))` checks if either tape is empty. If this is true, we
+the program is finished and can return `chart`, the the `map` that we have been
+creating.
 
-(maybe add something to this re discriminated unions)
+If the above test finds that its condition to be false, we trigger a recursion
+that constructs our `map`: $(chart (~(put by chart) i.a i.b), a t.a, b t.b)`.
+This code recursively adds an entry in our `map` where the head of the tape `a`
+maps to the value of the head of tape `b` with  `~(put by chart)`, our calling
+of the `put` arm of the `by` map-engien core. The recursion also "consumes"
+those heads with every iteration by changing `a` and `b` to their tails.
 
-So what does this all mean for us practically? We have to establish
-which set of the `fork` our data belongs to before we are able to use
-any faces in it. Even if both sets were to have the same faces, we
-still need to figure out which kind we have before we can use them.
-You can not find names through a `fork`.
-
-----------------------
-
-
-If either `tape` is empty, we are finished and can return `chart` which is the `map` we have been creating.
-
-If there are still things left in the `tapes` then we need to add them to our `map`. We of course are going to have to repeat this process until they are empty so we will start by changing the value of `chart`.
-
-```
-(~(put by chart) i.a i.b)
-```
-
-This part of that in particular is worth breaking down further. We are using the wide form of the `%~` rune. This rune is the general case for function calls. What we need to do is take a core, provide a sample, and pull an arm out of that core. `by` is the core and `put` is the arm out of that core that we want to pull. `by` is the `map` engine core that contains all the arms we are going to need to manipulate the map.
-
-It's worth pointing out that the syntax we have been using for function calls, that is `(foo bar)` could instead be written `~($ foo bar)` which is change `foo`'s sample to be `bar` and pull its `$` arm. There is a special form for this as a convenince for the most general case.
-
-`~(put by chart)` will actually produce for us a new gate we can then give two arguments to, `i.a` and `i.b`. Recall that in this context `i` is the head or first element of a list and `t` is the tail or the rest of the list.
-
-We are going to add an entry in our `map` where the head of the tape `a` maps to the value of the head of tape `b`.
-
-Let's reitterate the line of code in it's entirety.
-
-```
-      $(chart (~(put by chart) i.a i.b), a t.a, b t.b)
-```
-
-Putting it all together, we are going to call the gate we are in again, changing `chart` to be the new `map` produced by adding the new entry. We are also changing `a` and `b` to be the tails of those. We're done with the head after putting it in the map so we're essentially cutting it from our `tape`.
-
-Perhaps now you can understand why this arm is named `zipper`. It's
-putting two tapes together by matching pieces from each side, something akin to a jacket zipper.
-
-Having finished the `zipper` arm lets move on.
-
-If it feels like we are spending a lot of time setting up and not
-a lot of time actually getting to the point of the point of the core
-we are trying to write, it's because we are. We're about to start
-actually doing something with what we have built.
+Perhaps now you can understand why this arm is named `zipper`. It's putting two
+tapes together by matching pieces from each side, something akin to a jacket zipper.
 
 We have three related arms to look at next, `coder`, `encoder`, and
-`decoder`. Let's look at `coder` first as it is the foundation of
-the other two.
+`decoder`. `coder` is the foundation of the other two, so we'll look at it
+first.
 
 ```
     ++  coder
@@ -197,8 +248,13 @@ the other two.
       (~(put by (zipper a b)) ' ' ' ')
 ```
 
-Here again we create a gate that takes two `tapes`. We also see here
-we are again using `put by` but in this case we are feeding it a `map` produced by using the `zipper` arm we created before. We are adding an entry to the map where the space character maps to the space character. This is done to simplify handling of spaces in `tapes` we want to encode. We've opted to simply leaving them alone.
+`|=  [a=tape b=tape]` creates a gate that takes two `tapes`.
+
+We use `put by` on the next line, giving it a `map` produced by the `zipper`
+arm that we created before. This adds an entry to the map where the space
+character (called `ace`) maps to the itslrf. This is done to simplify
+the handling of spaces in `tapes` we want to encode, since we don't want to
+shift them.
 
 ```
     ++  encoder
@@ -211,19 +267,28 @@ we are again using `put by` but in this case we are feeding it a `map` produced 
       (coder keytape alpha)
 ```
 
-`encoder` and `decoder` are implemented in terms of `coder` which is
-why we examined it first. These gates are essentially identical but
-with the arguments reversed. In both cases we create `keytape` which
-we acquire by calling `rott` on `alpha` our arm which contains a `tape` of the alphabet and providing it the key passed in. `coder` then will produce a `map` that has the first argument as the keys and the second as the values.
+`encoder` and `decoder` are implemented in terms of the `coder` arm. These gates
+are essentially identical, with the arguments reversed. They simplify the two
+common transactions you want to do in this program: producing `maps` that we can
+use to encode and decode messages.
+
+In both cases, we create a gate that accepts a `@ud` named `key`.
+
+`=/  keytape=tape  (rott alpha key)` creates a `keytape` noun by calling `rott`
+on `alpha` our `key` input. `alpha` is our arm which contains a `tape` of the
+entire alphabet.
+
+`(coder alpha keytape)`, for `encoder`, and `(coder keytape alpha)`, for
+`decoder`, produce a `map` that has the first argument as the keys and the
+second as the values.
 
 If our two inputs to `coder` were `"abcdefghijklmnopqrstuvwxyz"` and
-`"bcdefghijklmnopqrstuvwxyza"` We would get a `map` where `'a'` maps to `'b'`, `'b'` to `'c'` and so on. By doing this we can produce a `map` that gives us a translation between the alphabet and our shifted alphabet or vice versa.
+`"bcdefghijklmnopqrstuvwxyza"` We would get a `map` where `'a'` maps to `'b'`,
+`'b'` to `'c'` and so on. By doing this we can produce a `map` that gives us a
+translation between the alphabet and our shifted alphabet, or vice versa.
 
-`encoder` and `decoder` are wrappers around `coder` to simplify the two common transactions you want to do, produce `maps` that we can use to encode and decode messages.
-
-Still with us? Good. We are finally about to use all this stuff we've
+Still with us? Good. We are finally about to use all the stuff that we've
 walked through.
-
 
 ```
     ++  shift
@@ -232,60 +297,57 @@ walked through.
     ++  unshift
       |=  [message=tape key=@ud]
       (operate message key (decoder key))
-    ++  operate
-      |=  [message=tape key=@ud encoder=(map @t @t)]
-      ^-  tape
-      %+  turn  message
-      |=  a=@t
-      (~(got by encoder) a)
 ```
 
-We are finally at the big three arms of this core, `shift`, `unshift`, and the heavy lifter `operate`.
+Both `shift` and `unshift` take two arguments: our `message`, the `tape` that we
+want to manipulate; and our `key`, the value that we want to shift our message
+by.
 
-Again `shift` and `unshift` are implemented in terms of `operate`. If
-you have done programming in the past you are probably familiar with
-this sort of design, if not, the reason it is done this way is to
-try to reduce instances of identical code.
+`shift` is for encoding, and `unshift` is for decoding. Thus, `shift` calls the
+`operate` arm with `(operate message key (encoder key))`, and `unshift` makes
+that call with `(operate message key (decoder key))`. These both produce the
+final output of the core, to be called in the form of `(shift.caesar msg key)`
+and `(unshift.caesar msg key)` at the bottom of the program.
 
-Both `shift` and `unshift` take a `tape` which is the message to encode or decode and an `@ud` which is a key for that operation. `operate` takes the message, a key, and an encoder, which is a `map`. Those encoders are produced by the `encoder` and `decoder` arms of the core.
-
-The only difference between `shift` and `unshift` is which one of the
-arms we are using to produce the encoder.
+```
+++  operate
+  |=  [message=tape key=@ud encoder=(map @t @t)]
+  ^-  tape
+  %+  turn  message
+  |=  a=@t
+  (~(got by encoder) a)
+```
 
 `operate` produces a `tape`. The `%+` rune allows us to pull an arm
 with a pair sample. The arm we are going to pull is `turn`. This arm
-takes two arguments, a `list` and a `gate` to apply to each element of the `list`. You may have seen this pattern before in other languages often called map, not to be confused with Hoon `map`.
+takes two arguments, a `list` and a `gate` to apply to each element of the
+`list`.
 
-The gate we are going to run against each element of our `tape` is to
-look up an element in the `map` and produce the value, the value being the matching letter for our shift.
-
-If we then give our arm Caesar's famous statement
-
-```
- (shift.caesar "i came i saw i conquered" 4)
-```
-
-we should get the secret code.
+If we then give our arm Caesar's famous statement, and get our left- and
+right-ciphers.
 
 ```
-"m geqi m wea m gsruyivih"
+> +caesar "i came i saw i conquered" 4
+["m geqi m wea m gsruyivih" "e ywia e ows e ykjmqanaz"]
 ```
 
-Our code is entirely secure! Of course this is a terrible code but it's fun.
-
-Now that we have explored the core itself, the rest of the generator is simply handling the arguments so that we can call it from the dojo and shifting and unshifting the same text. In practice this functionality would probably be better cut into two generators, and putting our core we created in `caesar.hoon` in `lib` but that is another discussion.
+Now, to decode, we can put either of our ciphers in with the appropriate key and
+decode them.
 
 ```
 > +caesar "m geqi m wea m gsruyivih" 4
 ["q kium q aie q kwvycmzml" "i came i saw i conquered"]
+
+> +caesar "e ywia e ows e ykjmqanaz" 4
+["i came i saw i conquered" "a usew a kso a ugfimwjwv"]
 ```
 
-Exercises
----------
+### Exercises
 
-1. Take our core and modify it to add a second layer of shifts.
 
-2. Extend our core to allow for using characters other than a-z.
+1. Take the example core and modify it to add a second layer of shifts.
+
+2. Extend the example core to allow for using characters other than a-z.
 
 3. Build a gate that can take a Caesar shifted `tape` and produce
 possible unshifted `tapes`.

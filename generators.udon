@@ -88,7 +88,7 @@ occurrence.
 To that end, `%say` generators use `mark`s to make it clear, to other Arvo
 computations, what exactly their kind of data their output is. A `mark` is akin
 to a MIME type on the Arvo level. A `mark` describes the data in
-some way, indicating that it's an %atom, or that it's a standard such as
+some way, indicating that it's an `%atom`, or that it's a standard such as
 `%json`, or even that it's an application-specific data structure like
 `%talk-command`. `mark`s are not specific to `%say` generators; any time data
 moves between programs in Arvo, that data is marked.
