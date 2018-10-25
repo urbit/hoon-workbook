@@ -17,7 +17,6 @@
         [2 %paper]
         [3 %rock]
     ==
-~!  cthrow-n
 =/  cthrow  (~(got by throwsr) cthrow-n)
 =/  player-throw-n  (~(got by throws) player-throw)
 =/  diff  (dif:si (sun:si cthrow-n) player-throw-n)

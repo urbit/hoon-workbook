@@ -1,0 +1,141 @@
+Build a generator that can take an argument in the form of a `@tas` and produce the result of a simple game of Rock Paper Scissors with the player.
+
+
+```
+!:
+:-  %say
+|=  [[* eny=@uvJ *] [player-throw=@tas ~] ~]
+:-  %noun
+=/  cthrow-n  (add 1 (~(rad og eny) 3))
+=/  throws=(map @tas @sd)
+    %-  ~(gas by *(map @tas @sd))
+    :~
+        [%scissors --1]
+        [%paper --2]
+        [%rock --3]
+    ==
+=/  throwsr=(map @ud @tas)
+    %-  ~(gas by *(map @ud @tas))
+    :~
+        [1 %scissors]
+        [2 %paper]
+        [3 %rock]
+    ==
+~!  cthrow-n
+=/  cthrow  (~(got by throwsr) cthrow-n)
+=/  player-throw-n  (~(got by throws) player-throw)
+=/  diff  (dif:si (sun:si cthrow-n) player-throw-n)
+=/  result
+  |=  [winner=tape winning-throw=@tas losing-throw=@tas]
+      "{winner} wins! {<winning-throw>} beats {<losing-throw>}"
+?:  |(=(diff -1) =(diff --2))
+  %-  result
+    :+  "Computer"
+      cthrow
+    player-throw
+?:  |(=(diff -2) =(diff --1))
+  %-  result
+    :+  "Player"
+      player-throw
+    cthrow
+"Tie!"
+```
+
+
+Starting by building a cell of `%say` and the rest of our program should be familiar enough. 
+
+```
+|=  [[* eny=@uvJ *] [player-throw=@tas ~] ~]
+```
+
+Here we can see that we are going to be working with a `@uvJ` we call `eny` to get a bit of entropic data and the `@tas` of data given to us by the user. 
+
+```
+:-  %noun
+```
+
+Once more we are looking to make the second half of our cell be itself a cell with the head of `%noun`. This could be any useful mark to describe our data.
+
+```
+=/  cthrow-n  (add 1 (~(rad og eny) 3))
+```
+
+Here we use the `og` core which is the core containing arms dealing with psuedo-random number generation. In particular, we pull the `rad` arm with the value `eny` which was that bit of data given to us by Arvo. Since `rad` produces a gate for us to use, we pull that as well with the value `3`. This will give us a value from 0 to 2. We then add `1` to bump the possible values up to 1 to 3. `=/` is simply putting a face on the value so we can refer to it later.
+
+```
+=/  throws=(map @tas @sd)
+    %-  ~(gas by *(map @tas @sd))
+    :~
+        [%scissors --1]
+        [%paper --2]
+        [%rock --3]
+    ==
+```
+
+Here we need to produce a map for doing some lookups to convert the `@tas` we are given into a signed decimal, `@sd`. This is the meaning of `(map @tas @sd)`.
+
+If you have used the `by` core before this should seem somewhat familiar. We want to pull the `gas` arm which is used to add elements to a `map`. Since we don't currently have a `map` to use we'll use `*` to `bunt` the `mold` of `(map @tas @sd)`. `bunt`ing a `mold` means to produce the default value for that `mold`. In the case of a `map` the default value is an empty `map` of the specified type.
+
+`gas` actually produces a `gate` we then wish to call with `%-` and the `list` of pairs we wish to add. `:~` produces that `list`. Each argument to it is a pair of a `@tas` and an `@sd`. The `--` before each of the numbers is to indicate that these are positive, signed integers. `--` is used instead of `+` because the later is not url safe, where as the former is. This does not have impact on this example, but could in others.
+
+
+```
+=/  throwsr=(map @ud @tas)
+    %-  ~(gas by *(map @ud @tas))
+    :~
+        [1 %scissors]
+        [2 %paper]
+        [3 %rock]
+    ==
+```
+
+Here we are producing a second map with the keys flipped with the values. Notice that the keys here are `@ud` instead of `@sd`. The reason for this will shortly become clear.
+
+```
+=/  cthrow  (~(got by throwsr) cthrow-n)
+=/  player-throw-n  (~(got by throws) player-throw)
+```
+
+Previously, we had generated `cthrow-n` which was a numeric value to represent which of the three possible values for the computer player to throw out. This is why we have our reverse map using `@ud` keys, because `cthrow-n` is an `@ud`. 
+
+We also have the `@tas` given to us by the player. We'd also like to get a numeric version of that to allow us to compare to the computer's throw.
+
+```
+=/  diff  (dif:si (sun:si cthrow-n) player-throw-n)
+```
+
+Here we are going to do a bit of math, but we have to use the `si` core to do it. This is because the `gates` you may be expecting to be able to use `add`, `sub`, etc are only used to do math on unsigned integers, but what we need to do is math on signed integers.
+
+`sun:si` is the gate to turn an `@ud`, such as `cthrow-n` into a `@sd`. `dif:si` is the subtraction gate for `@sd`. 
+
+Now we have `diff` which we will shortly use to figure out the result, but first we're going to create a new gate we can use. 
+
+```
+=/  result
+  |=  [winner=tape winning-throw=@tas losing-throw=@tas]
+      "{winner} wins! {<winning-throw>} beats {<losing-throw>}"
+```
+
+This is hopefully a very easy to read gate. It has three arguments, a `tape` of the winner, and two `@tas` one for each of the throws, first the winning one and then the losing one.
+
+What we produce is an interpolated string with the result. We'll produce this as the tail of our cell which will end up being printed to the console.
+
+```
+?:  |(=(diff -1) =(diff --2))
+  %-  result
+    :+  "Computer"
+      cthrow
+    player-throw
+?:  |(=(diff -2) =(diff --1))
+  %-  result
+    :+  "Player"
+      player-throw
+    cthrow
+"Tie!"
+```
+
+In any given game of RPS there are three outcomes, either the computer wins, the player wins, or there is a tie. Here we have those three possible cases. The math we have set up here means that if we get -1 or 2 the computer has won, but if we get -2 or 1 the player has won. If the outcome is 0, there is a tie.
+
+The rest of this syntax should be pretty familiar other than perhaps `:+` which is simply build a triple. We're just going to call the `result` gate to produce the correct `tape` for output to the player.
+
+In the case of a tie we simply produce the `tape` `"Tie!"`
