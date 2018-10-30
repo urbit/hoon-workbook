@@ -24,7 +24,6 @@ isn't the most compact implementation of such a cipher in Hoon, but it
 demonstrates important principles that more laconic code would not. Save it as
 `caesar.hoon` in your `/gen` directory.
 
-
 ```
 !:
 :-  %say
@@ -332,7 +331,7 @@ right-ciphers.
 ```
 
 Now, to decode, we can put either of our ciphers in with the appropriate key and
-decode them.
+look for the legible result.
 
 ```
 > +caesar "m geqi m wea m gsruyivih" 4

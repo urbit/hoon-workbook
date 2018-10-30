@@ -1,0 +1,192 @@
+## Recursion
+
+Recursion is a common pattern for solving certain problems in many programming
+languages, and Hoon is no exception. One of the classically recursive problems
+is that of factorial. The factorial of _n_ is the product of all positive
+integers less than or equal to N. Thus the factorial of 5, denoted as _5!_,
+would be:
+
+```
+5 * 4 * 3 * 2 * 1 = 120
+```
+
+### Factorial In Hoon
+
+Let's implement a factorial calculator in Hoon. To do so, we'll write a
+recursive `gate` (Hoon's equivalent of a function) to perform the relevant
+computation. Save the code below as `factorial.hoon` in your ship's `/gen`
+directory.
+
+```
+|=  n=@ud
+?:  =(n 1)
+  1
+(mul n $(n (dec n)))
+```
+
+Our `gate` takes one sample (argument) `n` that must nest inside `@ud` (unsigned
+integer).
+
+Next we check to see if `n` is `1`. If so, the result is just `1`, since
+`1 * 1 = 1`.
+
+If, however, `n` is _not_ `1`, then we branch to the final line of the code,
+`(mul n $(n (dec n)))`, where the recursion logic lives. Here, we multiply `n`
+by the recursion of `n` minus `1`. `$` initiates recursion: it calls the gate
+that we're already in, but replaces its sample.
+
+In our example, we multiply `n` with the product of this _entire gate
+all over again_ with `$(n (dec n))`,  except when that new gate has its sample
+decremented by one. This works recursively because each new gate will, of
+course, itself contain the code to call a further-decremented gate. Gates will
+continue to call new, further-decremented gates until `n` is `1`, and that `1`
+will be the final number to be multiplied by.
+
+Let's run the program in the Dojo:
+
+```
+> +factorial 5
+120
+```
+
+It may help to visualize the operation our example gate. The code below
+illustrates happens when we use it to find the factorial of 5:
+
+```
+(factorial 5)
+(mul 5 (factorial 4))
+(mul 5 (mul 4 (factorial 3)))
+(mul 5 (mul 4 (mul 3 (factorial 2))))
+(mul 5 (mul 4 (mul 3 (mul 2 (factorial 1)))))
+(mul 5 (mul 4 (mul 3 (mul 2 1))))
+(mul 5 (mul 4 (mul 3 2)))
+(mul 5 (mul 4 6))
+(mul 5 24)
+120
+```
+
+It's easy to see how we're "floating" gate calls until we reach the final
+iteration of such calls that only produces a value. The `mul n` component of the
+gate leaves something like `mul 5`, waiting for the a final series of terms
+to be operated upon. The `$(n (dec n))` component is what expands out the
+expression, as illustrated by `(factorial 4)`. Once the expression cannot be
+expanded out further, the operations work backwards, successively feeding values
+into the `mul` functions behind them.
+
+
+##### Tail-Call Optimization
+
+Our last example wasn't a very efficient use computing resources. The
+pyramid-shaped illustration approximates what's happening on the *call stack*, a
+memory structure that most computer programs use. In our example code, every time
+a parent gate calls another gate, the gate being called is "pushed"
+to the top of the stack in the form of a frame. This process continues until a
+value is produced instead of a function, completing the stack.
+
+```
+                  Push order      Pop order
+(fifth frame)         ^               |
+(fourth frame)        |               |
+(third frame)         |               |
+(second frame)        |               |
+(first frame)         |               V
+```
+
+Once this stack of frames is completed, frames "pop" off the stack starting at
+the top. When a frame is popped, it executes the contained gate and passes
+produced data to the frame below it. This process continues until the stack
+is empty, and we receive the gate's output.
+
+When a program's final expression uses the stack in this way, it's considered to
+be *not tail-recursive*. This usually happens when the last line of executable
+code calls more than one gate, our example code's `(mul n $(n (dec n)))` being
+such a case. That's because such an expression needs to hold each iteration of
+`$(n (dec n)` in memory so that it can know what to run against the `mul`
+function every time.
+
+To reiterate: if you have to manipulate the result of a
+recursion as the last expression of your gate, as we did in our example, the
+function is not tail-recursive, and therefore not very efficient with memory.
+A problem arises when we try to recurse more times that we have space on the
+stack. This will result in our computation failing and producing a stack
+overflow.
+
+But the Hoon compiler, like most compilers, is smart enough to notice when the
+last statement of a parent can reuse the same frame instead of needing to
+add new ones onto the stack. If we write our code properly, we can use a single
+frame that simply has its values replaced with each recursion.
+
+##### A Tail-Recursive Gate
+
+Our earlier implementation of factorial is not tail-recursive. The last thing we
+do is multiply the result of computing the factorial of `n - 1` by `n`. That
+means that the machine needs to hold onto each iteration of the function on the
+stack of just replacing it, using much more memory. But with a bit of
+refactoring, we can write a version that is in fact tail-recursive and can take
+advantage of this feature:
+
+```
+|=  n=@ud
+=/  t=@ud  1
+|-
+?:  =(n 1)
+    t
+$(n (dec n), t (mul t n))
+```
+
+The above code should look familiar. We are still building a gate that
+takes one argument `n`. This time, however, we are also putting a face on a
+`@ud` and setting it's initial value to 1. The `|-` here is used to create a new
+gate with one arm `$` and immediately call it. Think of `|-` as the recursion
+point.
+
+We then evaluate `n` to see if it is 1. If it is we return the value of `t`. In
+the case that `n` is anything other than 1, we perform our recursion:
+
+```
+$(n (dec n), t (mul t n))
+```
+
+All we are doing here is recursing our new gate and changing the values of `n`
+and `t`. `t` is used as an accumulator variable that we use to create a running
+total for the factorial computation.
+
+Let's illustrate how the stack is working visually in this example for factorial
+5.
+
+```
+(factorial 5)
+(|- 1 5)
+(|- 5 4)
+(|- 15 3)
+(|- 45 2)
+(|- 90 5 5)
+(|- 120 6 5)
+120
+```
+
+We simply decrement `n` and multiply `t` and `n` together to form the
+new value of `t`. Essentially we are creating a running total for the factorial
+computation. Since this call is the last thing that will be run in the default
+case and since we are doing all computation before the call, this version is
+properly tail-recursive.
+
+##### A Note on `$`
+
+`$` is, in its use with recursion, a reference to the `factorial` gate that we
+are inside of. A gate is in actuality just a core with one arm named `$`. The
+subject is searched in a depth-first, head before tail skipping faces and
+importantly, stopping on the first result. What this means is the first result
+found in the head will be the returned. If in this core we had used any other
+rune that produced a core with an arm named `$` that is the arm that would be
+referred to instead. If you wished to refer to the outer `$` in this context the
+idiomatic way would be to use [`^$`](/docs/reference/rune/ket) which is to skip
+the first match on a name.
+
+### Exercises
+
+1. Write a recursive gate to produce the first _n_
+[Fibonacci numbers](https://en.wikipedia.org/wiki/Fibonacci_number)
+
+2. Write a recursive gate that produces a list of moves to solve the
+[Tower of Hanoi problem](https://en.wikipedia.org/wiki/Tower_of_Hanoi)
