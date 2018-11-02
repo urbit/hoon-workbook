@@ -1,4 +1,6 @@
-Write a generator that can take a `@ud` and return a list of it's digits.
+# Digits
+
+Let's write a generator that takes a `@ud` and return a list of its digits.
 
 ```
 !:
@@ -15,47 +17,76 @@ Write a generator that can take a `@ud` and return a list of it's digits.
 ==
 ```
 
-We're creating a `%say` generator which requires us to produce a specially
-formatted `cell`
+We're creating a [`%say` generator](/docs/tutorials/generators). That means we
+need some "boilerplate" code in the format of `[%say [%noun "data"]]`:
 
 ```
-[%say [%noun "data"]]
-```
-
-The head is the literal `%say` and the tail is a `cell` with a head indicating to the `dojo` how to print the value we are creating. In this case, we can simply say `%noun` but if we need more specific printing information we can provide that. In this example, we then provide a `tape` as the data, but this could be anything we wanted to print.
-
-```
+:-  %say
 |=  [* [n=@ud ~] ~]
+:-  %noun
 ```
 
-When running a generator, `dojo` will do type analyses to determine which arguments to give to the generator. The arguments are generally a `cell` the head of which contains a set of arguments passed to every generator. In this instance we have chosen to ignore them since they will not be needed. For more information about these argument, see the generator documentation.
+The head is the literal `%say`.
 
-The tail of this cell is where we can describe any arguments we are expecting to be passed in when the generator is called. So we can see that we are expecting an argument `n` that is of type `@ud`.
+In the tail is the gate and its sample: `|=  [* [n=@ud ~] ~]`. This is
+where we describe any arguments we are expecting to be passed in when the
+generator is called. We are expecting data of type `@ud`. We give the da the face
+`n` to the passed-in data so that we can easily use it later.
 
-We now have to construct the second part of the cell. Again we provide the `dojo` with the information about how to pretty print the data. Here we've selected `%noun`.
+Also in the tail is another `cell`, its head indicating to the `dojo` how to
+print the value we are creating. In this case, we use the generic `%noun`.
+
+The tail of our second cell is the product of the rest of the program.
 
 ```
 =|  lis=(list @ud)
 ```
 
-We are going to construct a `list` of `@ud` by cutting up the `@ud` we got passed and so we add a face onto that type.
+We use the above code to construct a `list` of `@ud` by cutting up the `@ud` we
+got passed and so we add a face onto that type. This list is empty until we
+manipulate it further.
 
 ```
 |-  ^+  lis
 ?:  (lte n 0)
   lis
+```
+
+`|-` creates a gate that functions as a recursion point.
+
+We are actually able to reuse `lis` as defining
+the kind of thing we are going to produce. The `^+` rune is the sibling of the
+`^-` rune for casting. `^+` is used to cast by example, and it saves us typing
+out the definition of a type that we already have an instance of. It's useful
+when using a complicated type.
+
+`?:` checks if the statement that follows is true or false. If it's true that
+`n` is less than or equal to 0, we simply return `lis`. Otherwise, we branch to
+the following operations:
+
+```
 %=  $
   n    (div n 10)
   lis  (mod n 10)^lis
 ==
 ```
 
-Now we need to create the gate. We are actually able to reuse `lis` as defining the kind of thing we are going to produce. The `^+` rune is the sibling of the `^-` rune for casting. In the case of `^+` is used to cast by example and using it saves us typing out the definition of a type we already have constructed. More generally it's useful when a type is complicated.
+`%=` is the rune that allows us to take a wing with any number changes, in the
+form of a list. Our list has two elements that represent such changes, contained
+in a `$` expression to perform recursion.
 
-There are two cases. If `n` is less than or equal to 0 we simply return `lis` else we need to perform some operations.
+The first change divides `n` by 10, and assigning that product as the new value
+for `n`.
 
-`%=` is the rune that allows us to take a wing with changes. The changes are to divide `n` by 10 to produce the next value for `n`, and to also add `(mod n 10)` onto the front of `lis`. `x^y` is equivalent to `[x y]`. `mod` takes the remainder from dividing `n` by 10.
+The second change prepends the product of `n` modulo 10 to `lis` (`x^y` is an
+alternative syntax for `[x y]`). `mod` takes the remainder from dividing `n` by
++10.
 
-Doing this will essentially pull each digit out of `n` and put it into a `list`.
+These operations will pull each digit out of `n` and put it into a `list`.
 
-* TODO What if we do this with vases? Can we accept a vase, map it to whatever the correct value would be to extract each digit of the number in whatever base we are interpreting it in?
+* TODO What if we do this with vases? Can we accept a vase, map it to whatever
+the correct value would be to extract each digit of the number in whatever base
+we are interpreting it in?
+
+* TODO from Rob: we need a few exercises here. Maybe asking the reader to
+make one that accepts a vase could be one?
