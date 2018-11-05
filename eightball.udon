@@ -147,5 +147,8 @@ store the random result in `val`.
 
 `snag` is a standard-library arm that that takes two arguments: an atom and
 a `list`. It fetches the element in position `n` of the list, where `n` is the
-value of the atom it was passed. By using `val` as the position argument, we
-can return a random response from `answers` every time the generator is run.
+value of the atom it was passed. By using the randomized `val` as the position
+argument, we can pull a different response from `answers` every time the
+generator is run.
+
+TODO (rob): Exercises here.

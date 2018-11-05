@@ -28,13 +28,7 @@ light. Save the code below as `traffic.hoon` in your `/app` directory.
 [current-state.a current-state.b]
 ```
 
-To run this code, type the following command into the Dojo:
-
-```
-> |start %traffic
-```
-
-Now the app is running
+Let's look at the code piece-by-piece.
 
 ```
 =+  |%

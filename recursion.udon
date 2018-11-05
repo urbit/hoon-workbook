@@ -75,7 +75,7 @@ into the `mul` functions behind them.
 
 ##### Tail-Call Optimization
 
-Our last example wasn't a very efficient use computing resources. The
+Our last example isn't a very efficient use computing resources. The
 pyramid-shaped illustration approximates what's happening on the *call stack*, a
 memory structure that tracks the instructions of the program. In our example
 code, every time a parent gate calls another gate, the gate being called is
@@ -160,11 +160,12 @@ factorial 5.
 120
 ```
 
-We simply multiply `t` and `n` new value of `t`, and then decrement `n` before
-repeating. Since this `$` call is the final and solitary thing that is run in
-the default case and since we are doing all computation before the call, this
-version is properly tail-recursive. We don't need to do anything to the result
-of the recursion except recurse it again.
+We simply multiply `t` and `n` to produce the new value of `t`, and then
+decrement `n` before repeating. Since this `$` call is the final and solitary
+thing that is run in the default case and since we are doing all computation
+before the call, this version is properly tail-recursive. We don't need to do
+anything to the result of the recursion except recurse it again. That means that
+each iteration can be replaced instead of held in memory.
 
 ##### A Note on `$`
 
