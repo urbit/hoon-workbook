@@ -26,12 +26,12 @@ need some "boilerplate" code in the format of `[%say [%noun "data"]]`:
 :-  %noun
 ```
 
-The head is the literal `%say`.
+The head of this cell is the literal `%say`.
 
 In the tail is the gate and its sample: `|=  [* [n=@ud ~] ~]`. This is
 where we describe any arguments we are expecting to be passed in when the
-generator is called. We are expecting data of type `@ud`. We give the da the face
-`n` to the passed-in data so that we can easily use it later.
+generator is called. We are expecting data of type `@ud`. We give the data the
+face `n` to the passed-in data so that we can easily use it later.
 
 Also in the tail is another `cell`, its head indicating to the `dojo` how to
 print the value we are creating. In this case, we use the generic `%noun`.
@@ -54,15 +54,14 @@ manipulate it further.
 
 `|-` creates a gate that functions as a recursion point.
 
-We are actually able to reuse `lis` as defining
-the kind of thing we are going to produce. The `^+` rune is the sibling of the
-`^-` rune for casting. `^+` is used to cast by example, and it saves us typing
-out the definition of a type that we already have an instance of. It's useful
-when using a complicated type.
+We are actually able to reuse `lis` as defining the kind of thing we are going
+to produce. The `^+` rune is the sibling of the `^-` rune for casting. `^+` is
+used to cast by example, and it saves us typing out the definition of a type
+that we already have an instance of. It's useful when using a complicated type.
 
 `?:` checks if the statement that follows is true or false. If it's true that
-`n` is less than or equal to 0, we simply return `lis`. Otherwise, we branch to
-the following operations:
+`n` is less than or equal to `0`, we simply return `lis`. Otherwise, we branch
+to the following operations:
 
 ```
 %=  $
@@ -75,12 +74,12 @@ the following operations:
 form of a list. Our list has two elements that represent such changes, contained
 in a `$` expression to perform recursion.
 
-The first change divides `n` by 10, and assigning that product as the new value
+The first change divides `n` by `10`, and assigning that product as the new value
 for `n`.
 
-The second change prepends the product of `n` modulo 10 to `lis` (`x^y` is an
+The second change prepends the product of `n` modulo `10` to `lis` (`x^y` is an
 alternative syntax for `[x y]`). `mod` takes the remainder from dividing `n` by
-+10.
+10.
 
 These operations will pull each digit out of `n` and put it into a `list`.
 
