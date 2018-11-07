@@ -1,4 +1,4 @@
-## Recursion
+# Recursion
 
 Recursion is a common pattern for solving certain problems in many programming
 languages, and Hoon is no exception. One of the classically recursive problems

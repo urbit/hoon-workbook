@@ -56,7 +56,7 @@ is good practice whenever developing something in Hoon.
 
 To make our program produce a random result, we need entropy. To get entropy,
 we need data from Arvo. To get data from Arvo, we use a generator of the
-[`%say` generator](/docs/tutorials/generators) variety. The above code chunk is
+[`%say`](/docs/tutorials/generators) variety. The above code chunk is
 the template that is followed for all `%say` generators.
 
 `:-  %say` creates a cell with `%say` as that cell's head to define
@@ -147,7 +147,7 @@ store the random result in `val`.
 
 `snag` is a standard-library arm that that takes two arguments: an atom and
 a `list`. It fetches the element in position `n` of the list, where `n` is the
-value of the atom it was passed. By using the randomized `val` as the position
+value of the atom it was passed. By using the randomized `val` as that position
 argument, we can pull a different response from `answers` every time the
 generator is run.
 

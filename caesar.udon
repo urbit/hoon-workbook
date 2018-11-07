@@ -344,9 +344,9 @@ look for the legible result.
 ### Exercises
 
 
-1. Take the example core and modify it to add a second layer of shifts.
+1. Take the example generator and modify it to add a second layer of shifts.
 
-2. Extend the example core to allow for using characters other than a-z.
+2. Extend the example generator to allow for using characters other than a-z.
 
 3. Build a gate that can take a Caesar shifted `tape` and produce
 possible unshifted `tapes`.
