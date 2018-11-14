@@ -1,0 +1,354 @@
+Create a generator to create a starting position for the chess variant, Chess960. The back row of each side will be randomized with the follow rules. Bishops must be on opposite colors, and the king must be between the rooks.
+
+
+```
+!:
+:-  %say
+|=  [[* eny=@uv *] *]
+:-  %noun
+=<  =>  engine
+    =>  add-dark-bishop
+    =>  add-light-bishop
+    =>  %-  place-open  %queen
+    =>  %-  place-open  %knight
+    =>  %-  place-open  %knight
+    =/  rest  %+  sort
+                ~(tap in open.board)
+              |=  [p=position q=position]
+              (gth file.p file.q)
+    =>  %+  add-pieces  ~[%rook %king %rook]  rest
+    result
+=>  |%
++$  file  ?(%a %b %c %d %e %f %g %h)
++$  rank  ?(%1 %2 %3 %4 %5 %6 %7 %8)
++$  position  [=file =rank]
++$  piece  ?(%rook %knight %bishop %queen %king)
++$  placement  [=piece =position]
++$  board
+  $:  placed=(list placement)
+      $=  open
+      $_  %-  ~(gas in *(set position))
+          ^-  (list position)
+          :~  [%a %1]
+              [%b %1]
+              [%c %1]
+              [%d %1]
+              [%e %1]
+              [%f %1]
+              [%g %1]
+              [%h %1]
+          ==
+    ==
+--
+^=  engine
+|_  [=board die=_~(. og eny)]
+++  add-pieces
+  |=  [pieces=(list piece) positions=(list position)]
+  |-  ^+  +>.^$
+  ?~  pieces
+    ?~  positions
+      +>.^$
+    !!
+  ?~  positions  !!
+  =-  %+  add-piece  i.pieces  i.positions  
+  %=  $
+    pieces     t.pieces
+    positions  t.positions
+  ==
+++  add-piece
+  |=  [=piece =position]
+  %=  +>.$
+    placed.board  [[piece position] placed.board]
+    open.board  (~(del in open.board) position)
+  ==
+++  add-dark-bishop
+  %+  place-randomly  %bishop
+  :~  [%a %1]
+      [%c %1]
+      [%e %1]
+      [%g %1]
+  ==
+++  add-light-bishop
+  %+  place-randomly  %bishop
+  :~  [%b %1]
+      [%d %1]
+      [%f %1]
+      [%h %1]
+  ==
+++  place-open
+  |=  =piece
+  %+  place-randomly
+    piece
+  ~(tap in open.board)
+++  place-randomly
+  |=  [=piece positions=(list position)]
+  =^  roll  die  (rads:die (lent positions))
+  %+  add-piece  piece
+  (snag roll positions)
+++  result  board
+--
+```
+
+
+Once again we see the standard `%say` generator boilerplate
+
+```
+!:
+:-  %say
+|=  [[* eny=@uv *] *]
+:-  %noun
+```
+
+We can see that we are going to be producing a `%noun` and that we are going to be using `eny` the bit of entropic data sent to us by Arvo when the generator is run.
+
+The rest of this generator can be divided broadly into three parts.
+
+1) The actual execution of the algorithm to solve the problem
+2) The types core
+3) The engine core that is used in section 1
+
+This design is an idiomatic way to write hoon so let's delve into each part in turn to see what we can learn, starting with the types core.
+
+Types Core
+==========
+
+
+```
+=>  |%
++$  file  ?(%a %b %c %d %e %f %g %h)
++$  rank  ?(%1 %2 %3 %4 %5 %6 %7 %8)
++$  position  [=file =rank]
++$  piece  ?(%rook %knight %bishop %queen %king)
++$  placement  [=piece =position]
++$  board
+  $:  placed=(list placement)
+      $=  open
+      $_  %-  ~(gas in *(set position))
+          ^-  (list position)
+          :~  [%a %1]
+              [%b %1]
+              [%c %1]
+              [%d %1]
+              [%e %1]
+              [%f %1]
+              [%g %1]
+              [%h %1]
+          ==
+    ==
+--
+```
+
+Often when trying to understand a program, the best place to start will be with the types that program uses. Here we see the idiom of creating a separate core to have all of our types nicely separated from the rest of our program.
+
+We use the digraph `+$` here to say that each of the arms in this core are `molds`, gates which behave as types. (link to more specific documentation of molds)
+
+`file` and `rank` are both `forks` of the set of their arguments, that means that the value for a `file` can be any one of `%a`, `%b`, `%c`, etc but nothing else. It should also be noted that while `%a` is a `@tas` constant, `%1` is an `@ud` constant.
+
+A `position` is a pair of a `file` and `rank`. The `=file` is a syntactic shortcut for `file=file` where we have a `file` and put a `face` on it called `file`.
+ 
+A `piece` is a `fork` of a set of `@tas` constants representing the possible chess pieces.
+
+A `placment` is a cell of `piece` and `position`.
+
+`board` is our most complicated type. It consists of two parts `placed`, a `list` of `placements` and `open` which is a `set`.
+
+The `$=` rune allows us to put a face on another mold. `$_` allows us to produce a mold based on an example. What we are going to create next is a `set` of `positions`. We do this by using the `in` core which has arms for handling `sets`. `gas` is an arm that takes a `list` and adds the elements of it to an existing `set`.
+
+Since we do not yet have a `set` we use `*(set position)` to `bunt` a `set` of `position`, that is create an empty `set` of `position`.
+
+We've created a `list` of the possible `positions` on the board for the first `rank` where we are mixing up the pieces. 
+
+Now that we have a grasp of all the types, let's take a look at `engine`.
+
+```
+^=  engine
+|_  [=board die=_~(. og eny)]
+++  add-pieces
+  |=  [pieces=(list piece) positions=(list position)]
+  |-  ^+  +>.^$
+  ?~  pieces
+    ?~  positions
+      +>.^$
+    !!
+  ?~  positions  !!
+  =-  %+  add-piece  i.pieces  i.positions  
+  %=  $
+    pieces     t.pieces
+    positions  t.positions
+  ==
+++  add-piece
+  |=  [=piece =position]
+  %=  +>.$
+    placed.board  [[piece position] placed.board]
+    open.board  (~(del in open.board) position)
+  ==
+++  add-dark-bishop
+  %+  place-randomly  %bishop
+  :~  [%a %1]
+      [%c %1]
+      [%e %1]
+      [%g %1]
+  ==
+++  add-light-bishop
+  %+  place-randomly  %bishop
+  :~  [%b %1]
+      [%d %1]
+      [%f %1]
+      [%h %1]
+  ==
+++  place-open
+  |=  =piece
+  %+  place-randomly
+    piece
+  ~(tap in open.board)
+++  place-randomly
+  |=  [=piece positions=(list position)]
+  =^  roll  die  (rads:die (lent positions))
+  %+  add-piece  piece
+  (snag roll positions)
+++  result  board
+--
+```
+
+The first thing to notice is that `engine` is actually a `core` with a `sample`. That `sample` consists of a `board` and `die`.
+
+```
+die=_~(. og eny)
+```
+
+`_` here is actually the irregular form of the rune `$_` or form a mold by example. The example we are giving it is to give the `og` core which we have seeded with `eny`, the entropic data we are given when we run a generator. We will be using both of these a bit later.
+
+In an ideally built core, the arms should have meaningful names, so we can start to by examining those.
+
+```
+++  add-pieces
+++  add-piece
+++  add-dark-bishop
+++  add-light-bishop
+++  place-open
+++  place-randomly
+++  result
+```
+
+
+`add-piece` is a gate that takes a `piece` and `position` and like most of our arms will produce a new `engine`.
+
+```
+++  add-piece
+  |=  [=piece =position]
+  %=  +>.$
+    placed.board  [[piece position] placed.board]
+    open.board  (~(del in open.board) position)
+  ==
+```
+
+The `%=` rune allows us to take a wing with changes. In this case the wing we are taking is `+>.$`. `$` is the current arm and `+>` allows us to traverse up to the `engine` core.
+
+So what are the changes? We change both `placed.board` and `open.board`, the first by constructing a `placement` and adding it to the `list` of `placments` and the second by removing that position from the `set` of open `positions`.
+
+```
+++  place-randomly
+  |=  [=piece positions=(list position)]
+  =^  roll  die  (rads:die (lent positions))
+  %+  add-piece  piece
+  (snag roll positions)
+```
+
+`place-randomly` takes a `piece` and a `list` of `positions`. The most interesting rune here is `=^`.
+
+We are using `rads:die` to get a random number that we'll use to determine where to put the `piece`, but it actually gives us back two things, the first the random number and then a new `og` core so we can produce future random numbers.
+
+`=^` allows us to put a face on the first thing `roll` and change the value of `die` to be the new `og` core.
+
+We then pull the `add-piece` arm with the `piece` and the location that was selected by `roll`.
+
+```
+++  add-dark-bishop
+  %+  place-randomly  %bishop
+  :~  [%a %1]
+      [%c %1]
+      [%e %1]
+      [%g %1]
+  ==
+++  add-light-bishop
+  %+  place-randomly  %bishop
+  :~  [%b %1]
+      [%d %1]
+      [%f %1]
+      [%h %1]
+  ==
+```
+
+Here we have two arms that will actually place our first two pieces for us. One of the rules of Chess960 is that each bishop needs to be on an opposite color thus we special case these as there are only four places each that we can place them. Here we can see we have those two sets of four `positions` that we sent to `place-randomly`. Since the two lists are exclusive, there can be no collision of pieces.
+
+Our final arm is `add-pieces`
+
+```
+++  add-pieces
+  |=  [pieces=(list piece) positions=(list position)]
+  |-  ^+  +>.^$
+  ?~  pieces
+    ?~  positions
+      +>.^$
+    !!
+  ?~  positions  !!
+  =-  %+  add-piece  i.pieces  i.positions  
+  %=  $
+    pieces     t.pieces
+    positions  t.positions
+  ==
+```
+
+Here we have a `gate` that takes a `list` of `pieces` and a `list` of `positions`. The first thing we are doing in this `gate` is creating `trap` with `|-`
+
+`^+` is the rune to typecast by example. Our example is `+>.^$`. Breaking this down we are searching the subject for `$` but we want to skip the first match which is why we use `^$`. Recall that `$` is the name of the unnamed arm in a `gate`. So we then use `+>` to get the parent of that gate, which is the `engine` core. 
+
+So we know we are going to be producing another `engine` and we can predict from the name that we are going to place each of the `pieces` at the `positions` given. 
+
+```
+  ?~  pieces
+    ?~  positions
+      +>.^$
+    !!
+  ?~  positions  !!
+```
+
+Here we look to see if `pieces` is empty and if it is we look to see that `positions` is empty. If they are both empty, we return `+>.^$` or the `engine` we are using.
+
+If either `pieces` or `positions` are empty but the other isn't, we simply crash with `!!` since this event should never happen. We expect for each `piece` there to be a matching `position`.
+
+```
+  =-  %+  add-piece  i.pieces  i.positions  
+  %=  $
+    pieces     t.pieces
+    positions  t.positions
+  ==
+```
+
+`=-` is the inverted `=+` the rune  to combine a noun with the subject. We then call `add-piece` with `i` out of both lists. `i` is the face on the first element of a `list`. 
+Finally we want to run this arm again only changing `pieces` to be `t.pieces` and `positions` to be `t.positions`. `t` is the face on the rest of the list. 
+
+Now that we have looked at the types and the `engine` core we can take a look at the actual algorithm we are going to be running.
+
+```
+=<  =>  engine
+    =>  add-dark-bishop
+    =>  add-light-bishop
+    =>  %-  place-open  %queen
+    =>  %-  place-open  %knight
+    =>  %-  place-open  %knight
+    =/  rest  %+  sort
+                ~(tap in open.board)
+              |=  [p=position q=position]
+              (gth file.p file.q)
+    =>  %+  add-pieces  ~[%rook %king %rook]  rest
+    result
+```
+
+We are using two related runes quite a lot so it's worth taking a look at them. `=<` and `=>` are both runes used to compose two hoons. `=>` is simply the inverted form of `=<`. The first usage here is combining what comes next with the rest of the program.
+
+Here we use each of the arms we created in a particular order. First we `add-dark-bishop` then we `add-light-bishop` to add the two bishops to the board. Next we place the queen with `place-open`. Then come the two knights. So far this has been very straight forward. We know that we have a board that has both bishops, both knights, and the queen placed. To place the final three pieces, we must observe the rule that the king must be between the two rooks. `open.board` at this point is a `set` of the three `positions` left, but `sets` are not ordered so we need to sort it.
+
+to do this we use `tap` out of `in` to turn the `set` into a `list`. Then we pass this as the first argument to `sort`. The second argument of `sort` is a gate used to determine what order to sort the list in. In our case we just want to sort them by which ever `file` has the highest value.
+
+Having done that we put the face `rest` on the now sorted list. Here is where we can finally use `add-pieces` to place the final three pieces. We then produce the result.
