@@ -183,4 +183,7 @@ skips the first match of a name.
 [Fibonacci numbers](https://en.wikipedia.org/wiki/Fibonacci_number)
 
 2. Write a recursive gate that produces a list of moves to solve the
-[Tower of Hanoi problem](https://en.wikipedia.org/wiki/Tower_of_Hanoi)
+[Tower of Hanoi problem](https://en.wikipedia.org/wiki/Tower_of_Hanoi).
+Disks are stacked on a pole by decreasing order of size. Move all of the 
+disks from one pole to another with a third pole as a spare, moving one
+disc at a time, without putting a larger disk on top of a smaller disk.

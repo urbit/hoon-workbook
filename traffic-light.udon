@@ -51,11 +51,11 @@ and does that with the arm that it contains.
 new type that is created in the code that follows, `?(%red %yellow %green)`.
 That following code creates a new type from the union of its elements. In this
 case, the state can be one of three values: `%red`, `%yellow`, or `%green`
-corresponding to the three colors of a standard traffic light. Creating such a
-union is a common idiom in Hoon programs that need to introduce new types. It
-allows the compiler to do
-[constant folding](https://en.wikipedia.org/wiki/Constant_folding), which
-improves performance.
+corresponding to the three colors of a standard traffic light. 
+
+Having new types in a separate core is a common idiom in Hoon programs that allows 
+the compiler to do [constant folding](https://en.wikipedia.org/wiki/Constant_folding), 
+which improves performance.
 
 ```
 =/  current-state=state  %red
