@@ -1,3 +1,5 @@
+;>
+
 # Traffic Light
 
 Let's create a state machine in Hoon that models the functionality of a traffic
