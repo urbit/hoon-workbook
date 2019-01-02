@@ -87,7 +87,7 @@ tape `boom`.
 ```
 
 The start of our generator is simple enough. The `!:` in the first line enables
-a full stack trace int he event of an error. The following three lines create a
+a full stack trace in the event of an error. The following three lines create a
 `%say` generator that takes a list of tape as an argument.
 
 We next use the `=<` rune to compose two hoons, inverted. Remember that it's
